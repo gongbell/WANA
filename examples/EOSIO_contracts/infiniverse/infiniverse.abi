@@ -1,0 +1,433 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "buyland",
+            "base": "",
+            "fields": [
+                {
+                    "name": "buyer",
+                    "type": "name"
+                },
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "cancelsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "closedeposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "deletepersis",
+            "base": "",
+            "fields": [
+                {
+                    "name": "persistent_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "deposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "depositinf",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "land",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "lat_north_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_east_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "lat_south_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_west_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "reg_end_date",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "landprice",
+            "base": "",
+            "fields": [
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "moveland",
+            "base": "",
+            "fields": [
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "lat_north_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_east_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "lat_south_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_west_edge",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "opendeposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "persistent",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "source",
+                    "type": "uint64"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "position",
+                    "type": "vector3"
+                },
+                {
+                    "name": "orientation",
+                    "type": "vector3"
+                },
+                {
+                    "name": "scale",
+                    "type": "vector3"
+                }
+            ]
+        },
+        {
+            "name": "persistpoly",
+            "base": "",
+            "fields": [
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "poly_id",
+                    "type": "string"
+                },
+                {
+                    "name": "position",
+                    "type": "vector3"
+                },
+                {
+                    "name": "orientation",
+                    "type": "vector3"
+                },
+                {
+                    "name": "scale",
+                    "type": "vector3"
+                }
+            ]
+        },
+        {
+            "name": "poly",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "poly_id",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "registerland",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "lat_north_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_east_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "lat_south_edge",
+                    "type": "float64"
+                },
+                {
+                    "name": "long_west_edge",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "setlandprice",
+            "base": "",
+            "fields": [
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "updatepersis",
+            "base": "",
+            "fields": [
+                {
+                    "name": "persistent_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "land_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "position",
+                    "type": "vector3"
+                },
+                {
+                    "name": "orientation",
+                    "type": "vector3"
+                },
+                {
+                    "name": "scale",
+                    "type": "vector3"
+                }
+            ]
+        },
+        {
+            "name": "vector3",
+            "base": "",
+            "fields": [
+                {
+                    "name": "x",
+                    "type": "float32"
+                },
+                {
+                    "name": "y",
+                    "type": "float32"
+                },
+                {
+                    "name": "z",
+                    "type": "float32"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "buyland",
+            "type": "buyland",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cancelsale",
+            "type": "cancelsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "closedeposit",
+            "type": "closedeposit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "deletepersis",
+            "type": "deletepersis",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "depositinf",
+            "type": "depositinf",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "moveland",
+            "type": "moveland",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "opendeposit",
+            "type": "opendeposit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "persistpoly",
+            "type": "persistpoly",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "registerland",
+            "type": "registerland",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setlandprice",
+            "type": "setlandprice",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updatepersis",
+            "type": "updatepersis",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "deposit",
+            "type": "deposit",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "land",
+            "type": "land",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "landprice",
+            "type": "landprice",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "persistent",
+            "type": "persistent",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "poly",
+            "type": "poly",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

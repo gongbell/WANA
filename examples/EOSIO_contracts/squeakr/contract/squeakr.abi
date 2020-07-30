@@ -1,0 +1,175 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "accept",
+            "base": "",
+            "fields": [
+                {
+                    "name": "followee",
+                    "type": "name"
+                },
+                {
+                    "name": "follower",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "admclear",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sender",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "follower",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "follower",
+                    "type": "name"
+                },
+                {
+                    "name": "followee",
+                    "type": "name"
+                },
+                {
+                    "name": "access_granted",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "followreq",
+            "base": "",
+            "fields": [
+                {
+                    "name": "follower",
+                    "type": "name"
+                },
+                {
+                    "name": "followee",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "post",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "secret",
+                    "type": "string"
+                },
+                {
+                    "name": "uuid",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "squeak",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "uint32"
+                },
+                {
+                    "name": "secret",
+                    "type": "string"
+                },
+                {
+                    "name": "uuid",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "user",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "accept",
+            "type": "accept",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "admclear",
+            "type": "admclear",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "followreq",
+            "type": "followreq",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "post",
+            "type": "post",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "follower",
+            "type": "follower",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "request",
+            "type": "follower",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "squeak",
+            "type": "squeak",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "user",
+            "type": "user",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

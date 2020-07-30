@@ -1,0 +1,199 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [
+        {
+            "new_type_name": "post_id",
+            "type": "uint64"
+        }
+    ],
+    "structs": [
+        {
+            "name": "member_stat_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "post_count",
+                    "type": "uint64"
+                },
+                {
+                    "name": "post_vote_received",
+                    "type": "uint64"
+                },
+                {
+                    "name": "vote_given_explicit",
+                    "type": "uint64"
+                },
+                {
+                    "name": "vote_received_implicit",
+                    "type": "uint64"
+                },
+                {
+                    "name": "vote_received_explicit",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "post",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "post_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "reset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "any",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "reward_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "amount_post_count",
+                    "type": "asset"
+                },
+                {
+                    "name": "amount_vote_received",
+                    "type": "asset"
+                },
+                {
+                    "name": "amount_vote_given",
+                    "type": "asset"
+                },
+                {
+                    "name": "amount_total",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "vote",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "post_id",
+                    "type": "post_id"
+                }
+            ]
+        },
+        {
+            "name": "vote_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "post_id",
+                    "type": "post_id"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "post",
+            "type": "post",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "reset",
+            "type": "reset",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "vote",
+            "type": "vote",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "memberstats",
+            "type": "member_stat_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "posts",
+            "type": "post_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "rewards",
+            "type": "reward_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "votes",
+            "type": "vote_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

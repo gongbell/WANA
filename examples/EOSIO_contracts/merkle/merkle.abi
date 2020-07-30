@@ -1,0 +1,41 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sun Jul  7 17:40:59 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "verify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proof",
+                    "type": "string[]"
+                },
+                {
+                    "name": "positions",
+                    "type": "uint8[]"
+                },
+                {
+                    "name": "root",
+                    "type": "string"
+                },
+                {
+                    "name": "leaf",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "types": [
+
+    ],
+    "actions": [
+        {
+            "name": "verify",
+            "type": "verify",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

@@ -1,0 +1,31 @@
+{
+    "types": [],
+    "structs": [{
+        "name": "lovel",
+        "base": "",
+        "fields": [
+            {"name": "lover", "type": "account_name"},
+            {"name": "letter","type": "string"}
+            ]
+        },{
+            "name": "say",
+            "base": "",
+            "fields": [
+                {"name": "lover","type": "account_name"},
+                {"name": "letter","type": "string"}
+                ]
+        }
+        ],
+    "actions": [
+        {"name": "say","type": "say"}
+        ],
+    "tables": [{
+        "name": "love",
+        "type": "lovel",
+        "index_type": "i64",
+        "key_names" : ["lover"],
+        "key_types" : ["uint64"]
+    }
+        ],
+    "clauses": []
+}

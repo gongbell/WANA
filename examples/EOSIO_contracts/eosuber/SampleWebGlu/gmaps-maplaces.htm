@@ -1,0 +1,32 @@
+<div id="gmap-circles"></div>
+<div id="mapdata"></div>
+
+<script src="https://maps.google.com/maps/api/js?sensor=false&libraries=geometry&v=3.22&key=AIzaSyD6zOdbajADfpapwuy9Nml9XXxYawRcazI"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="maplace.min.js"></script>
+
+<script>
+
+    $(document).ready(function ()
+	{
+		new Maplace({
+			locations: Circles,
+			map_div: '#gmap-circles',
+			start: 4,
+			view_all_text: 'Points of interest',
+			type: 'circle',
+			shared: {
+				zoom: 4,
+				html: '%index'
+			},
+			circleRadiusChanged: function(index, point, marker) {
+				$('#mapdata').val(marker.getCenter().lat().toFixed(5) + ',' + marker.getCenter().lng().toFixed(5) + ',' + parseInt(marker.getRadius()));
+			},
+			circleCenterChanged: function(index, point, marker) {
+				$('#mapdata').val(marker.getCenter().lat().toFixed(5) + ',' + marker.getCenter().lng().toFixed(5) + ',' + parseInt(marker.getRadius()));
+			}
+		}).Load();
+	});
+
+</script>
+	

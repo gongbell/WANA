@@ -1,0 +1,69 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Jul  4 20:58:22 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "del",
+            "base": "",
+            "fields": [
+                {
+                    "name": "uuid",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "set",
+            "base": "",
+            "fields": [
+                {
+                    "name": "uuid",
+                    "type": "uint64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "customtoken",
+                    "type": "name"
+                },
+                {
+                    "name": "customasset",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "sudodel",
+            "base": "",
+            "fields": [
+                {
+                    "name": "uuid",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "del",
+            "type": "del",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "set",
+            "type": "set",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sudodel",
+            "type": "sudodel",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

@@ -1,0 +1,225 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sat Jul  6 22:07:27 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "addrider",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vehaccount",
+                    "type": "name"
+                },
+                {
+                    "name": "ridaccout",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "breachtg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "breachId",
+                    "type": "uint32"
+                },
+                {
+                    "name": "tg",
+                    "type": "name"
+                },
+                {
+                    "name": "vehicleacct",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "byvehicle",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "clearall",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "cleartgbs",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "cleartgs",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "cleartgus",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "createtg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "gatename",
+                    "type": "string"
+                },
+                {
+                    "name": "latitude",
+                    "type": "uint32"
+                },
+                {
+                    "name": "longitude",
+                    "type": "uint32"
+                },
+                {
+                    "name": "highway_name",
+                    "type": "string"
+                },
+                {
+                    "name": "highway_number",
+                    "type": "uint32"
+                },
+                {
+                    "name": "direction",
+                    "type": "string"
+                },
+                {
+                    "name": "tollamount",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "createtgu",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "createveh",
+            "base": "",
+            "fields": [
+                {
+                    "name": "",
+                    "type": "name"
+                },
+                {
+                    "name": "",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "remrider",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vehaccount",
+                    "type": "name"
+                },
+                {
+                    "name": "ridaccout",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "addrider",
+            "type": "addrider",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "breachtg",
+            "type": "breachtg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "byvehicle",
+            "type": "byvehicle",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "clearall",
+            "type": "clearall",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cleartgbs",
+            "type": "cleartgbs",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cleartgs",
+            "type": "cleartgs",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cleartgus",
+            "type": "cleartgus",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createtg",
+            "type": "createtg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createtgu",
+            "type": "createtgu",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createveh",
+            "type": "createveh",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "remrider",
+            "type": "remrider",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

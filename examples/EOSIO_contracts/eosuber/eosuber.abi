@@ -1,0 +1,178 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Oct  9 03:35:19 2018",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "createdriver",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "phone",
+                    "type": "string"
+                },
+                {
+                    "name": "lat",
+                    "type": "float64"
+                },
+                {
+                    "name": "lon",
+                    "type": "float64"
+                },
+                {
+                    "name": "radiuskm",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "createreview",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "driver",
+                    "type": "name"
+                },
+                {
+                    "name": "review_title",
+                    "type": "string"
+                },
+                {
+                    "name": "review_body",
+                    "type": "string"
+                },
+                {
+                    "name": "score",
+                    "type": "int8"
+                }
+            ]
+        },
+        {
+            "name": "findreview",
+            "base": "",
+            "fields": [
+                {
+                    "name": "driver",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "findtaxis",
+            "base": "",
+            "fields": [
+                {
+                    "name": "lat",
+                    "type": "float64"
+                },
+                {
+                    "name": "lon",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "updatedriver",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "phone",
+                    "type": "string"
+                },
+                {
+                    "name": "lat",
+                    "type": "float64"
+                },
+                {
+                    "name": "lon",
+                    "type": "float64"
+                },
+                {
+                    "name": "radiuskm",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "updatereview",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "driver",
+                    "type": "name"
+                },
+                {
+                    "name": "review_title",
+                    "type": "string"
+                },
+                {
+                    "name": "review_body",
+                    "type": "string"
+                },
+                {
+                    "name": "score",
+                    "type": "int8"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "createdriver",
+            "type": "createdriver",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createreview",
+            "type": "createreview",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "findreview",
+            "type": "findreview",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "findtaxis",
+            "type": "findtaxis",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updatedriver",
+            "type": "updatedriver",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updatereview",
+            "type": "updatereview",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

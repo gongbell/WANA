@@ -1,0 +1,886 @@
+{
+  "version": "eosio::abi/1.0",
+  "types": [{
+      "new_type_name": "time",
+      "type": "uint32"
+    }
+  ],
+  "structs": [{
+      "name": "configs",
+      "base": "",
+      "fields": [{
+          "name": "owner",
+          "type": "name"
+        },{
+          "name": "ipfs_receiver",
+          "type": "name"
+        },{
+          "name": "proc_receiver",
+          "type": "name"
+        },{
+          "name": "sys_receiver",
+          "type": "name"
+        },{
+          "name": "net_receiver",
+          "type": "name"
+        },{
+          "name": "sec_receiver",
+          "type": "name"
+        },{
+          "name": "ipfs_conf",
+          "type": "string"
+        },{
+          "name": "proc_conf",
+          "type": "string"
+        },{
+          "name": "sys_conf",
+          "type": "string"
+        },{
+          "name": "net_conf",
+          "type": "string"
+        },{
+          "name": "sec_conf",
+          "type": "string"
+        },{
+          "name": "ipfs_hash",
+          "type": "string"
+        },{
+          "name": "proc_hash",
+          "type": "string"
+        },{
+          "name": "sys_hash",
+          "type": "string"
+        },{
+          "name": "net_hash",
+          "type": "string"
+        },{
+          "name": "sec_hash",
+          "type": "string"
+        },{
+          "name": "ipfs_status",
+          "type": "string"
+        },{
+          "name": "proc_status",
+          "type": "string"
+        },{
+          "name": "sys_status",
+          "type": "string"
+        },{
+          "name": "net_status",
+          "type": "string"
+        },{
+          "name": "sec_status",
+          "type": "string"
+        },{
+          "name": "ipfs_update",
+          "type": "time"
+        },{
+          "name": "proc_update",
+          "type": "time"
+        },{
+          "name": "sys_update",
+          "type": "time"
+        },{
+          "name": "net_update",
+          "type": "time"
+        },{
+          "name": "sec_update",
+          "type": "time"
+        },{
+          "name": "created",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "device",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "uidx",
+          "type": "string"
+        },{
+          "name": "pubkey",
+          "type": "string"
+        },{
+          "name": "idx",
+          "type": "string"
+        },{
+          "name": "bandwidth",
+          "type": "uint128"
+        },{
+          "name": "cpu",
+          "type": "uint128"
+        },{
+          "name": "memory",
+          "type": "uint128"
+        },{
+          "name": "disk",
+          "type": "uint128"
+        },{
+          "name": "networktype",
+          "type": "uint8"
+        },{
+          "name": "usertype",
+          "type": "uint8"
+        },{
+          "name": "isactive",
+          "type": "bool"
+        },{
+          "name": "created",
+          "type": "time"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "usaged",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "cpu",
+          "type": "uint64"
+        },{
+          "name": "memory",
+          "type": "uint64"
+        },{
+          "name": "disk",
+          "type": "uint64"
+        },{
+          "name": "bandwidth",
+          "type": "uint64"
+        },{
+          "name": "fsused",
+          "type": "uint64"
+        },{
+          "name": "statuscode",
+          "type": "uint16"
+        },{
+          "name": "status",
+          "type": "string"
+        },{
+          "name": "message",
+          "type": "string"
+        },{
+          "name": "created",
+          "type": "time"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "log",
+      "base": "",
+      "fields": [{
+          "name": "key",
+          "type": "uint64"
+        },{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "cpu",
+          "type": "uint64"
+        },{
+          "name": "memory",
+          "type": "uint64"
+        },{
+          "name": "disk",
+          "type": "uint64"
+        },{
+          "name": "bandwidth",
+          "type": "uint64"
+        },{
+          "name": "fsused",
+          "type": "uint64"
+        },{
+          "name": "statuscode",
+          "type": "uint16"
+        },{
+          "name": "status",
+          "type": "string"
+        },{
+          "name": "message",
+          "type": "string"
+        },{
+          "name": "created",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "account",
+      "base": "",
+      "fields": [{
+          "name": "balance",
+          "type": "asset"
+        }
+      ]
+    },{
+      "name": "version",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "type",
+          "type": "uint8"
+        },{
+          "name": "ver",
+          "type": "uint64"
+        },{
+          "name": "url",
+          "type": "string"
+        },{
+          "name": "hash",
+          "type": "string"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [{
+          "name": "supply",
+          "type": "asset"
+        },{
+          "name": "max_supply",
+          "type": "asset"
+        },{
+          "name": "issuer",
+          "type": "name"
+        }
+      ]
+    },{
+      "name": "amount",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "staking",
+          "type": "uint64"
+        },{
+          "name": "balance",
+          "type": "asset"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "pool",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "shared",
+          "type": "uint64"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "pricing",
+      "base": "",
+      "fields": [{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "price",
+          "type": "asset"
+        },{
+          "name": "volume",
+          "type": "uint64"
+        },{
+          "name": "updated",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "stake",
+      "base": "",
+      "fields": [{
+          "name": "key",
+          "type": "uint64"
+        },{
+          "name": "from",
+          "type": "name"
+        },{
+          "name": "to",
+          "type": "name"
+        },{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "balance",
+          "type": "asset"
+        },{
+          "name": "volume",
+          "type": "uint64"
+        },{
+          "name": "created",
+          "type": "time"
+        }
+      ]
+    },{
+      "name": "total",
+      "base": "",
+      "fields": [{
+          "name": "t_resource",
+          "type": "uint8"
+        },{
+          "name": "t_amount",
+          "type": "asset"
+        },{
+          "name": "t_staking",
+          "type": "uint64"
+        },{
+          "name": "t_volume",
+          "type": "uint64"
+        }
+      ]
+    },{
+      "name": "debug",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        }
+      ]
+    },{
+      "name": "create",
+      "base": "",
+      "fields": [{
+          "name": "maximum_supply",
+          "type": "asset"
+        }
+      ]
+    },{
+      "name": "issue",
+      "base": "",
+      "fields": [{
+          "name": "quantity",
+          "type": "asset"
+        },{
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "transfer",
+      "base": "",
+      "fields": [{
+          "name": "from",
+          "type": "name"
+        },{
+          "name": "to",
+          "type": "name"
+        },{
+          "name": "quantity",
+          "type": "asset"
+        },{
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "reward",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "quantity",
+          "type": "asset"
+        },{
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "burn",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "quantity",
+          "type": "asset"
+        },{
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "signup",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "pubkey",
+          "type": "string"
+        },{
+          "name": "uidx",
+          "type": "string"
+        },{
+          "name": "idx",
+          "type": "string"
+        },{
+          "name": "bandwidth",
+          "type": "uint64"
+        },{
+          "name": "memory",
+          "type": "uint64"
+        },{
+          "name": "cpu",
+          "type": "uint64"
+        },{
+          "name": "disk",
+          "type": "uint64"
+        },{
+          "name": "networktype",
+          "type": "uint8"
+        },{
+          "name": "usertype",
+          "type": "uint8"
+        }
+      ]
+    },{
+      "name": "reset",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "pubkey",
+          "type": "string"
+        },{
+          "name": "uidx",
+          "type": "string"
+        },{
+          "name": "idx",
+          "type": "string"
+        },{
+          "name": "bandwidth",
+          "type": "uint64"
+        },{
+          "name": "memory",
+          "type": "uint64"
+        },{
+          "name": "cpu",
+          "type": "uint64"
+        },{
+          "name": "disk",
+          "type": "uint64"
+        },{
+          "name": "networktype",
+          "type": "uint8"
+        },{
+          "name": "usertype",
+          "type": "uint8"
+        }
+      ]
+    },{
+      "name": "activate",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "isactive",
+          "type": "bool"
+        }
+      ]
+    },{
+      "name": "set",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "playbook",
+          "type": "string"
+        },{
+          "name": "playhash",
+          "type": "string"
+        },{
+          "name": "object_type",
+          "type": "uint8"
+        }
+      ]
+    },{
+      "name": "remove",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        }
+      ]
+    },{
+      "name": "initial",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        }
+      ]
+    },{
+      "name": "clear",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "object_type",
+          "type": "uint8"
+        }
+      ]
+    },{
+      "name": "update",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "object_type",
+          "type": "uint8"
+        },{
+          "name": "stat",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "logging",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "cpu",
+          "type": "uint64"
+        },{
+          "name": "memory",
+          "type": "uint64"
+        },{
+          "name": "disk",
+          "type": "uint64"
+        },{
+          "name": "bandwidth",
+          "type": "uint64"
+        },{
+          "name": "fsused",
+          "type": "uint64"
+        },{
+          "name": "statuscode",
+          "type": "uint16"
+        },{
+          "name": "status",
+          "type": "string"
+        },{
+          "name": "message",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "regpool",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "volume",
+          "type": "uint64"
+        }
+      ]
+    },{
+      "name": "staking",
+      "base": "",
+      "fields": [{
+          "name": "from",
+          "type": "name"
+        },{
+          "name": "to",
+          "type": "name"
+        },{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "quantity",
+          "type": "asset"
+        }
+      ]
+    },{
+      "name": "unstaking",
+      "base": "",
+      "fields": [{
+          "name": "from",
+          "type": "name"
+        },{
+          "name": "to",
+          "type": "name"
+        },{
+          "name": "key",
+          "type": "uint64"
+        },{
+          "name": "resource",
+          "type": "uint8"
+        }
+      ]
+    },{
+      "name": "price",
+      "base": "",
+      "fields": [{
+          "name": "resource",
+          "type": "uint8"
+        },{
+          "name": "price",
+          "type": "asset"
+        }
+      ]
+    },{
+      "name": "upgrade",
+      "base": "",
+      "fields": [{
+          "name": "type",
+          "type": "uint8"
+        },{
+          "name": "version",
+          "type": "uint64"
+        },{
+          "name": "url",
+          "type": "string"
+        },{
+          "name": "hash",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "debug",
+      "type": "debug",
+      "ricardian_contract": ""
+    },{
+      "name": "create",
+      "type": "create",
+      "ricardian_contract": ""
+    },{
+      "name": "issue",
+      "type": "issue",
+      "ricardian_contract": ""
+    },{
+      "name": "transfer",
+      "type": "transfer",
+      "ricardian_contract": ""
+    },{
+      "name": "reward",
+      "type": "reward",
+      "ricardian_contract": ""
+    },{
+      "name": "burn",
+      "type": "burn",
+      "ricardian_contract": ""
+    },{
+      "name": "signup",
+      "type": "signup",
+      "ricardian_contract": ""
+    },{
+      "name": "reset",
+      "type": "reset",
+      "ricardian_contract": ""
+    },{
+      "name": "activate",
+      "type": "activate",
+      "ricardian_contract": ""
+    },{
+      "name": "set",
+      "type": "set",
+      "ricardian_contract": ""
+    },{
+      "name": "remove",
+      "type": "remove",
+      "ricardian_contract": ""
+    },{
+      "name": "initial",
+      "type": "initial",
+      "ricardian_contract": ""
+    },{
+      "name": "clear",
+      "type": "clear",
+      "ricardian_contract": ""
+    },{
+      "name": "update",
+      "type": "update",
+      "ricardian_contract": ""
+    },{
+      "name": "logging",
+      "type": "logging",
+      "ricardian_contract": ""
+    },{
+      "name": "regpool",
+      "type": "regpool",
+      "ricardian_contract": ""
+    },{
+      "name": "staking",
+      "type": "staking",
+      "ricardian_contract": ""
+    },{
+      "name": "unstaking",
+      "type": "unstaking",
+      "ricardian_contract": ""
+    },{
+      "name": "price",
+      "type": "price",
+      "ricardian_contract": ""
+    },{
+      "name": "upgrade",
+      "type": "upgrade",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [{
+      "name": "configs",
+      "index_type": "i64",
+      "key_names": [
+        "owner"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "configs"
+    },{
+      "name": "device",
+      "index_type": "i64",
+      "key_names": [
+        "account"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "device"
+    },{
+      "name": "usaged",
+      "index_type": "i64",
+      "key_names": [
+        "account"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "usaged"
+    },{
+      "name": "log",
+      "index_type": "i64",
+      "key_names": [
+        "key"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "log"
+    },{
+      "name": "accounts",
+      "index_type": "i64",
+      "key_names": [
+        "balance"
+      ],
+      "key_types": [
+        "asset"
+      ],
+      "type": "account"
+    },{
+      "name": "version",
+      "index_type": "i64",
+      "key_names": [
+        "account"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "version"
+    },{
+      "name": "stat",
+      "index_type": "i64",
+      "key_names": [
+        "supply"
+      ],
+      "key_types": [
+        "asset"
+      ],
+      "type": "currency_stats"
+    },{
+      "name": "amount",
+      "index_type": "i64",
+      "key_names": [
+        "account"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "amount"
+    },{
+      "name": "pool",
+      "index_type": "i64",
+      "key_names": [
+        "account"
+      ],
+      "key_types": [
+        "name"
+      ],
+      "type": "pool"
+    },{
+      "name": "pricing",
+      "index_type": "i64",
+      "key_names": [
+        "resource",
+        "price"
+      ],
+      "key_types": [
+        "uint8",
+        "asset"
+      ],
+      "type": "pricing"
+    },{
+      "name": "stake",
+      "index_type": "i64",
+      "key_names": [
+        "key"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "stake"
+    },{
+      "name": "total",
+      "index_type": "i64",
+      "key_names": [
+        "t_resource",
+        "t_amount"
+      ],
+      "key_types": [
+        "uint8",
+        "asset"
+      ],
+      "type": "total"
+    }
+  ],
+  "ricardian_clauses": [],
+  "error_messages": [],
+  "abi_extensions": [],
+  "variants": []
+}

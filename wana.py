@@ -127,7 +127,7 @@ class Runtime:
         # Invoke a function denoted by the function address with the provided arguments.
         func_addr = self.func_addr(name)
         logger.debugln(f'Running function {name}):')
-        r = self.exec_by_address(func_addr)
+        r = self.exec_by_address(func_addr, args)
         if r:
             return r
         return None
@@ -301,7 +301,7 @@ def parse_arguments():
     parser.add_argument(
         '-s',
         '--sol',
-        type=str,
+        action='store_true',
         help='Analyze the solidity smart contract'
     )
     return parser.parse_args()
@@ -324,7 +324,8 @@ def main():
         except FunctionTimedOut:
             logger.println(f'{args.execute}: time out')
         except Exception as e:
-            logger.println(traceback.format_exc())
+            logger.debugln(traceback.format_exc())
+            logger.println(f'Error: {e}')
 
     # Execute all export functions of wasm
     if args.analyse_directory:
@@ -335,8 +336,8 @@ def main():
             except FunctionTimedOut:
                 logger.println(f'{contract_path}: time out')
             except Exception as e:
-                logger.println(traceback.format_exc())
-
+                logger.debugln(traceback.format_exc())
+                logger.println(f'Error: {e}')
 
     # Count the number of instruction
     if args.count_instruction:
@@ -357,15 +358,21 @@ def execution_and_analyze(contract_path):
     try:
         global_vars.vm = vm = load(contract_path)
     except Exception as e:
-        logger.println(f'{e}: [{name}] failed initialization')
-        return
+      logger.println(f'{e}: [{name}] failed initialization')
+      return
+    try:
+        global_vars.set_name_int64(name)
+    except Exception as e:
+        logger.debugln(f'invalid contract name {name}: {e}')
 
-    global_vars.set_name_int64(name)
-
-    before_sym_exec(vm, name)
-    detect_fake_eos(vm, name)
-    after_sym_exec(name)
-    global_vars.clear_count()
+    try:
+        before_sym_exec(vm, name)
+        detect_fake_eos(vm, name)
+        after_sym_exec(name)
+    except Exception as e:
+        logger.println(f'Error: {e}')
+    finally:
+        global_vars.clear_count()
 
 
 def before_sym_exec(vm, name):

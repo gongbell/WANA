@@ -22,9 +22,38 @@ The main components of WANA is as follow.
   + `structure.py` and `runtime.py` represent WebAssembly bytecode structure and virtual machine runtime structure.
   + `number.py`, `utils.py` and `logger.py` are helper modules.
   
-## Usage
-Firstly, the prerequisites in [requirements.txt](./requirements.txt) should be correctly installed. 
+## Prerequisites
+The following Python packages are required.
+ + six==1.14.0
+ + func_timeout==4.3.5
+ + z3-solver==4.8.8.0
 
+The project was developed under Ubuntu 18.04, therefore it is compatible with later version in principle.
+
+
+## Usage
+There should be a compiled smart contract in wasm format. The EOSIO and Ethereum smart contract could be 
+compiled as follow.
+
+### EOSIO smart contract
+The EOSIO smart contract is developed using cpp or rust, like [appdemo](./examples/EOSIO_contracts/appdemo/appdemo.cpp).
+Firstly, installing the [eosio.cdt](https://github.com/EOSIO/eosio.cdt) according to its 
+[README](https://github.com/EOSIO/eosio.cdt/blob/master/README.md). Then, using the following command to compile the
+above smart contract.
+```bash
+eosio-cpp appdemo.cpp -o appdemo.wasm
+```
+
+### Ethereum smart contract
+The type of Ethereum smart contract source code is solidity. At present, there are some tools to complete the process
+that compile smart contract from solidity to WebAssembly. For example, [soll](https://github.com/second-state/SOLL) is
+a more mature tool. After setting up the environment of soll, using the following command to compile a smart contract,
+for example, [Router.sol](./examples/Ethereum_contracts/delegatecall_samples/Router.sol).
+```bash
+~/soll/build/tools/soll/soll Router.sol
+```
+
+### Analysis
 The following command will analyze the EOSIO smart contract `contract.wasm` with timeout 20 seconds. The `-t` is 
 optional, the symbolic execution won't be interrupted until complete analysis if `-t` not set.
 ```bash
@@ -53,5 +82,5 @@ contract.wasm: forged transfer notification found
 1. https://webassembly.org/
 2. https://github.com/WebAssembly/
 3. https://developer.mozilla.org/en-US/docs/WebAssembly
-
-
+4. https://github.com/EOSIO/eosio.cdt
+5. https://github.com/second-state/SOLL

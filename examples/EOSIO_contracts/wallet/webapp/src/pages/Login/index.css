@@ -1,0 +1,35 @@
+.loginPage {
+    width: 100%;
+    height: 100%;
+    border-radius: 5;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.loginPage .formHolder {
+    background-color: white;
+    margin: 0 auto;
+    width: 400px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+}
+
+.loginPage .formHolder h2 {
+    text-align: center;
+}
+
+.loginPage .formHolder p {
+    padding: 0 20px;
+}
+
+.loginPage .formHolder .btn {
+    display: block;
+    width: 80%;
+    margin: 8px auto;
+}
+
+.loginPage .formHolder .contentHolder {
+    margin: 0 auto;
+}

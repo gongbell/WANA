@@ -1,0 +1,54 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sun Jul  7 17:34:44 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "addgravatar",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account_name",
+                    "type": "name"
+                },
+                {
+                    "name": "display_name",
+                    "type": "string"
+                },
+                {
+                    "name": "image_url",
+                    "type": "string"
+                },
+                {
+                    "name": "telegram",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "rmvgravatar",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account_name",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "addgravatar",
+            "type": "addgravatar",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "rmvgravatar",
+            "type": "rmvgravatar",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

@@ -120,6 +120,10 @@ class GlobalVariables:
     def forged_detect(self):
         self.forged_detection_mode = True
 
+    @property
+    def detection_mode(self):
+        return self.fake_detection_mode or self.forged_detection_mode
+
     def set_name_int64(self, name):
         self.contract_name_int64 = utils.eos_abi_to_int(name)
 

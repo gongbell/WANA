@@ -1,0 +1,345 @@
+$battle_arena_width: 1020px;
+$battle_arena_height: 600px;
+
+@mixin arena_bg($value) {
+  background: url("../assets/images/arenas/#{$value}.png") no-repeat center
+    center;
+  background-size: cover;
+}
+
+.monster-picks {
+  small {
+    margin-left: 15px;
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  .player-monsters {
+    display: flex;
+    flex-wrap: wrap;
+
+    .monster-pick {
+      max-width: 140px;
+      max-height: 140px;
+      margin: 18px;
+      @include filter(brightness, 80%);
+
+      &:hover,
+      &.active {
+        border: 2px solid $green;
+        border-radius: 5%;
+        cursor: pointer;
+        @include filter(brightness, 100%);
+      }
+    }
+  }
+}
+
+.loading-message {
+  color: rgb(255, 255, 255);
+  font-size: 5.5em;
+  font-family: $logo-font;
+}
+
+.monster-hp-name {
+  position: absolute;
+  margin-top: -25px;
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.battle-actions {
+  height: 30px;
+}
+
+.battle-buttons-container {
+  display: flex;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 8px;
+  justify-content: space-around;
+  height: 50px;
+  background-color: #000;
+  font-family: "Montserrat", sans-serif;
+  padding-right: 105px;
+}
+
+.my-monster-hp {
+  left: 30px;
+  bottom: 80px;
+}
+
+.enemy-monster-hp {
+  left: 713px;
+  top: -569px;
+}
+
+.battle-arena {
+  width: 100%;
+  height: $battle_arena_height;
+  margin: auto;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: #000000;
+  background-size: cover;
+  overflow: hidden;
+
+  .elements {
+    margin-left: 14px;
+  }
+
+  .arena-monster {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    progress {
+      margin-bottom: 6px !important;
+      position: relative;
+      width: 275px;
+    }
+
+    .monster-hp-notification {
+      color: $red;
+      font-weight: bold;
+      font-family: $logo-font;
+      font-size: 30px;
+      position: absolute;
+      left: 55%;
+      top: 55%;
+      text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+      animation: 2s ease-out 0s 1 slideInFromBottom;
+    }
+
+    .monster-hp-notification.enemy-monster-hp-notification {
+      top: 10%;
+    }
+  }
+
+  // .my-monster-hp-notification {
+  //   bottom: 100px;
+  //   left: 150px;
+  // }
+
+  // .enemy-monster-hp-notification {
+  //   top: 0px;
+  //   right: 150px;
+  //   display: block;
+  // }
+
+  .battle-winner-banner {
+    position: absolute;
+    z-index: 999;
+    font-weight: bold;
+    font-family: $logo-font;
+    font-size: 92px;
+    margin: auto;
+    margin-top: -100px;
+    text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+    text-align: center;
+  }
+
+  .enemy-monster {
+    cursor: pointer;
+
+    &:hover,
+    &.active {
+      border: 2px solid $red;
+      border-radius: 5%;
+    }
+  }
+}
+
+.arena.top-bar {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  top: 10px;
+  width: 100%;
+  padding: 0 8px;
+
+  .progress-bar {
+    width: 48%;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  .hp-bar-2 {
+    text-align: right;
+  }
+}
+
+.attack-button {
+  padding: 4px 8px;
+  height: 32px;
+  vertical-align: middle;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #fff;
+  text-decoration: none !important;
+
+  img {
+    height: 100%;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+}
+
+.attack-button.active {
+  border: 1px solid #fff;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px 1px #fff;
+  text-shadow: 1px 1px 2px #fff;
+  background-color: #fff;
+}
+
+.attack-button.neutral {
+  color: #fff;
+}
+
+.attack-button.neutral.active {
+  color: #000;
+  background: linear-gradient(45deg, #000 0%, #ccc 100%);
+}
+
+.attack-button.animal {
+  color: rgb(232, 169, 130);
+}
+
+.attack-button.earth {
+  color: #d2691e;
+}
+
+.attack-button.fire {
+  color: red;
+}
+
+.attack-button.lightning {
+  color: gold;
+}
+
+.attack-button.metal {
+  color: #777;
+}
+
+.attack-button.poison {
+  color: blueviolet;
+}
+
+.attack-button.undead {
+  color: #ccc;
+}
+
+.attack-button.water {
+  color: turquoise;
+}
+
+.attack-button.wood {
+  color: green;
+}
+
+.pending-attack-button,
+.confirm-attack-button {
+  color: #fff;
+  border: 4px solid #ccc;
+  background: #000;
+  height: 120px;
+  width: 120px;
+  border-radius: 50%;
+  font-family: "Montserrat", sans-serif;
+  text-align: center;
+  padding: 20px;
+  position: absolute;
+  right: -20px;
+  bottom: -40px;
+
+  // @media screen and (min-width: 769px) {
+  //   padding-top: 35px;
+  //   bottom: -15px;
+  // }
+}
+
+.confirm-attack-button {
+  border: 4px solid #01e1bf;
+  background: #01e1bf;
+  background: linear-gradient(to bottom, #89eef3, #01e1bf);
+  box-shadow: 0px 0px 20px 1px $my-blue;
+  text-shadow: 1px 1px 2px #000;
+
+  span {
+    text-transform: capitalize;
+  }
+
+  &:hover,
+  &:active {
+    color: #fff;
+    text-decoration: none;
+  }
+}
+
+.mobile-arena-countdown {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  margin: auto;
+  background-color: #000;
+  border-radius: 50%;
+  border: 2px solid #eee;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-family: "Montserrat", sans-serif;
+  font-size: 30px;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000;
+  padding: 8px;
+  width: 70px;
+  text-align: center;
+}
+
+.mobile-arena-countdown.expired {
+  background-color: red;
+}
+
+/* mobile arena */
+
+@media screen and (max-width: 768px) {
+  .battle-arena {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    top: 0;
+    left: 0;
+    position: fixed;
+    z-index: 100;
+    background-color: black;
+    flex-direction: column;
+    overflow: hidden;
+
+    .arena-monster {
+      margin: 0;
+    }
+  }
+
+  .mobile-arena-back {
+    position: fixed;
+    z-index: 999;
+    font-weight: bold;
+    font-size: 24px;
+    color: #fff;
+    bottom: 10px;
+    left: 50%;
+    margin: auto;
+    transform: translateX(-50%);
+    text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+  }
+
+  // .monster-image {
+  //   // height: 150px !important;
+  //   min-height: 150px !important;
+  //   max-height: 150px !important;
+  // }
+}

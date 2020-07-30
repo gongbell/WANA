@@ -37,7 +37,7 @@ def cur_state_analysis(store, frame, stack, expr, pc, solver=None):
         return
 
     if global_vars.fake_detection_mode:
-        fake_eos_analysis(store, frame, expr, pc, solver)
+        fake_eos_analysis(store, frame, stack, expr, pc, solver)
         return
 
     if _is_transfer_function(store, frame, stack, expr, pc):
@@ -164,7 +164,7 @@ def detect_forged_transfer(store, frame, index):
 
     """
 
-    global_vars.detect()
+    global_vars.forged_detect()
 
     module = frame.module
     table = store.tables[module.tableaddrs[0]]
@@ -298,14 +298,14 @@ def detect_fake_eos(vm, name) -> None:
     func_type.args = bytearray([bin_format.i64, bin_format.i64, bin_format.i64])
     func_type.rets = bytearray()
     apply_func = vm.store.funcs[vm.module_instance.funcaddrs[global_vars.apply_function_address]]
-    global_vars.detect()
+    global_vars.fake_detect()
     if apply_func.functype == func_type:
         params = utils.gen_symbolic_args(apply_func)
         global_vars.apply_params = params
         params[0] = utils.eos_abi_to_int(name)
         params[2] = utils.eos_abi_to_int('transfer')
         init_constraints = [params[0] != params[1], params[1] != utils.eos_abi_to_int('eosio.token')]
-        vm.exec_by_address(global_vars.apply_function_address, params, False, init_constraints)
+        vm.exec_by_address(global_vars.apply_function_address, params, init_constraints)
     global_vars.sym_exec() # set the detection mode to False
 
 

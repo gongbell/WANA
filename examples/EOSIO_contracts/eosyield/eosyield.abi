@@ -1,0 +1,67 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sun Jul  7 17:30:55 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "extend",
+            "base": "",
+            "fields": [
+                {
+                    "name": "new_yield_seconds",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "regain",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "setowner",
+            "base": "",
+            "fields": [
+                {
+                    "name": "new_owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "yieldcontrol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "yield_seconds",
+                    "type": "uint32"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "extend",
+            "type": "extend",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "regain",
+            "type": "regain",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setowner",
+            "type": "setowner",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "yieldcontrol",
+            "type": "yieldcontrol",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

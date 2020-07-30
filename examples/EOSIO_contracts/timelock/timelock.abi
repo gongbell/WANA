@@ -1,0 +1,44 @@
+{
+  "version": "eosio::abi/1.0",
+  "types": [],
+  "structs": [{
+              		"name": "void",
+              		"base": "",
+              		"fields": []
+              	},{
+                  		"name": "delaylimit",
+                  		"base": "",
+                  		"fields": [{
+                        "name": "idx",
+                        "type": "uint64"
+                       },{
+                    "name": "minimum",
+                    "type": "asset"
+                },{
+                                                                               			"name": "required_delay",
+                                                                               			"type": "uint32"
+                                                                               		}]
+                  	}],
+  "actions": [{
+                            			"name": "start",
+                            			"type": "void",
+                            			"ricardian_contract": ""
+                            		},{
+                                                   			"name": "update",
+                                                   			"type": "delaylimit",
+                                                   			"ricardian_contract": ""
+                                                   		}],
+  "tables": [{
+  			"name": "delimits",
+  			"index_type": "i64",
+  			"key_names": [
+  				"idx"
+  			],
+  			"key_types": [
+  				"uint64"
+  			],
+  			"type": "delaylimit"
+  		}],
+  "ricardian_clauses": [],
+  "abi_extensions": []
+}

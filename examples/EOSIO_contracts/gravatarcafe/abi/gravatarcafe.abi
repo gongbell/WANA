@@ -1,0 +1,51 @@
+{
+   "version": "eosio::abi/1.0",
+   "types": [{
+      "new_type_name": "account_name",
+      "type": "name"
+   }],
+  "structs": [{
+     "name": "addgravatar",
+     "base": "",
+     "fields": [
+        {"name":"account_name", "type":"name"},
+        {"name":"display_name", "type":"string"},
+        {"name":"image_url", "type":"string"},
+        {"name":"telegram", "type":"string"}
+     ]
+  },{
+     "name": "gravatar",
+     "base": "",
+     "fields": [
+        {"name":"account_name", "type":"name"},
+        {"name":"display_name", "type":"string"},
+        {"name":"image_url", "type":"string"},
+        {"name":"telegram", "type":"string"}
+     ]
+  },{
+     "name": "rmvgravatar",
+     "base": "",
+     "fields": [
+        {"name":"account_name", "type":"name"}
+     ]
+  }],
+  "actions": [{
+      "name": "addgravatar",
+      "type": "addgravatar",
+      "ricardian_contract": ""
+  },{
+      "name": "rmvgravatar",
+      "type": "rmvgravatar",
+      "ricardian_contract": ""
+  }],
+  "tables": [{
+      "name": "gravatars",
+      "type": "gravatar",
+      "index_type": "i64",
+      "key_names" : ["gravatar"],
+      "key_types" : ["uint64"]
+    }
+  ],
+  "ricardian_clauses": [],
+  "abi_extensions": []
+}

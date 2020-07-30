@@ -1,0 +1,34 @@
+{
+  "name": "@kingofeos/contract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "compile": "eosiocpp -o contract/KingOfEOS.wast contract/KingOfEOS.cpp && eosiocpp -g contract/KingOfEOS.abi contract/KingOfEOS.cpp",
+    "deploy": "npm run compile && node deploy.js",
+    "@transfer": "node actions/transfer.js",
+    "@init": "node actions/init.js",
+    "@end": "node actions/end.js",
+    "dump_tables": "node scripts/dump_tables.js",
+    "buy_ram": "node scripts/buy_ram.js",
+    "init": "node init.js"
+  },
+  "author": "Christoph Michel",
+  "license": "ISC",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "dependencies": {
+    "binaryen": "^37.0.0",
+    "dotenv": "^6.0.0",
+    "eosjs": "^15.0.3",
+    "lodash": "^4.17.5"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-jest": "^23.2.0",
+    "babel-preset-env": "^1.7.0",
+    "jest": "^22.4.2"
+  }
+}

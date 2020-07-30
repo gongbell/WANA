@@ -1,0 +1,96 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Jul  4 20:56:50 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "createpost",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "tag",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "deletepost",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pkey",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "editpost",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pkey",
+                    "type": "uint64"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "tag",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "likepost",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pkey",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "createpost",
+            "type": "createpost",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "deletepost",
+            "type": "deletepost",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "editpost",
+            "type": "editpost",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "likepost",
+            "type": "likepost",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

@@ -1,0 +1,18 @@
+{
+  "name": "delpi-oracle-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "updater.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "asdfaf",
+  "license": "ISC",
+  "dependencies": {
+    "eosjs": "^16.0.8",
+    "dotenv": "^6.0.0",
+    "request": "*",
+    "colors": "*",
+    "axios": "*"
+  }
+}

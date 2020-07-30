@@ -1,0 +1,276 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "balance",
+            "base": "",
+            "fields": [
+                {
+                    "name": "primary",
+                    "type": "int64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "balance",
+                    "type": "extended_asset"
+                }
+            ]
+        },
+        {
+            "name": "close",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "balance_type",
+                    "type": "extended_symbol"
+                }
+            ]
+        },
+        {
+            "name": "convert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "market",
+                    "type": "symbol"
+                },
+                {
+                    "name": "from",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "to",
+                    "type": "extended_symbol"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "manager",
+                    "type": "name"
+                },
+                {
+                    "name": "fee_percent",
+                    "type": "float64"
+                },
+                {
+                    "name": "initial_price",
+                    "type": "float64"
+                },
+                {
+                    "name": "target_reserve_ratio",
+                    "type": "float64"
+                },
+                {
+                    "name": "initial_collateral",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "supply_symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "peg_symbol",
+                    "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "extended_symbol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "contract",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "open",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "balance_type",
+                    "type": "extended_symbol"
+                }
+            ]
+        },
+        {
+            "name": "pegs",
+            "base": "",
+            "fields": [
+                {
+                    "name": "peg_symbol",
+                    "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "pex_state",
+            "base": "",
+            "fields": [
+                {
+                    "name": "manager",
+                    "type": "name"
+                },
+                {
+                    "name": "supply",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "sold_peg",
+                    "type": "asset"
+                },
+                {
+                    "name": "spare_collateral",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "current_target_price",
+                    "type": "float64"
+                },
+                {
+                    "name": "target_reserve_ratio",
+                    "type": "float64"
+                },
+                {
+                    "name": "fee",
+                    "type": "float64"
+                },
+                {
+                    "name": "last_price_in_range",
+                    "type": "block_timestamp_type"
+                },
+                {
+                    "name": "last_sync",
+                    "type": "block_timestamp_type"
+                },
+                {
+                    "name": "collateral_balance",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "pegged_balance",
+                    "type": "extended_asset"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "withdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "extended_asset"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "close",
+            "type": "close",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "convert",
+            "type": "convert",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open",
+            "type": "open",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "withdraw",
+            "type": "withdraw",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "balances",
+            "type": "balance",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "markets",
+            "type": "pex_state",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "pegtokens",
+            "type": "pegs",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

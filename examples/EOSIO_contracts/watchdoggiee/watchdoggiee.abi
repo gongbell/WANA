@@ -1,0 +1,143 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "counter",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sender",
+                    "type": "name"
+                },
+                {
+                    "name": "remaining",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "delkv",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "key",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "kv",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "val",
+                    "type": "uint64"
+                },
+                {
+                    "name": "ts",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "ping",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "setkv",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "val",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "setlimit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sender",
+                    "type": "name"
+                },
+                {
+                    "name": "limit",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "delkv",
+            "type": "delkv",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "ping",
+            "type": "ping",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setkv",
+            "type": "setkv",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setlimit",
+            "type": "setlimit",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "counters",
+            "type": "counter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "kvs",
+            "type": "kv",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}
