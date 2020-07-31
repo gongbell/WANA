@@ -7,7 +7,7 @@ https://arxiv.org/abs/2007.15510
 
 WANA: Symbolic Execution of Wasm Bytecode for Cross-Platform Smart Contract Vulnerability Detection
 
-Dong Wang, Bo Jiang, W.K. Chan
+by Dong Wang, Bo Jiang, W.K. Chan
 
 Please contact Dr. Bo Jiang (gongbell@gmail.com) if you have any questions. 
 
