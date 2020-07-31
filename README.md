@@ -1,6 +1,16 @@
 # WANA
 A Symbolic Execution Engine for Wasm Bytecode and A Cross-Platform Smart Contract Vulnerability Detector
 
+For technical details, please checkout our paper at arxiv: 
+
+https://arxiv.org/abs/2007.15510
+
+WANA: Symbolic Execution of Wasm Bytecode for Cross-Platform Smart Contract Vulnerability Detection
+
+Dong Wang, Bo Jiang, W.K. Chan
+
+Please contact Dr. Bo Jiang (gongbell@gmail.com) if you have any questions. 
+
 ## Smart Contract
 To evaluate a smart contract, the wasm smart contract is needed. The wasm bytecode file generated from two sources 
 as following.
