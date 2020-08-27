@@ -391,6 +391,8 @@ def after_sym_exec(name):
         logger.println(f'{name}: delegate call found')
     if global_vars.ethereum_greedy > 0:
         logger.println(f'{name}: greedy found')
+    if global_vars.ethereum_mishandled_exceptions > 0:
+        logger.println(f'{name}: mishandled_exceptions found')
 
 
 if __name__ == '__main__':

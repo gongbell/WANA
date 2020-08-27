@@ -124,6 +124,21 @@ def function_analysis(vm) -> None:
         if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
             global_vars.cannot_send_ETH = True
 
+        # Detect Mishandled Exceptions
+        # 1. Analyzing instruction sequentially.
+        # 2. If the current instruction is *call*, then track the position of the *call* return result on the stack.
+        # 3. If *ethereum.drop* and *ethereum.eq* do not appear in the interval of n instructions, then there is an error.
+        '''for index, func in enumerate(funcs):
+            expr = func.expr
+            for i, instr in enumerate(expr.data):
+                if (instr.code == bin_format.call):
+                    # Track where this instruction is pushed onto the stack
+                    call_result = stack.len()
+                    for i,instr in enumerate():
+                        '''
+
+
+
 
 def check_block_dependence(block_number_flag: bool) -> None:
     """During symbolic execution, it is called when the 
@@ -149,6 +164,31 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
     """
     if instr in (bin_format.i32_const, bin_format.i64_const):
         global_vars.find_ethereum_delegate_call()
+
+
+def check_ethereum_mishandled_exceptions_step_one(stack: 'Stack') -> None:
+    """During symbolic execution, call it to detect mishandled_exceptions errors
+    """
+    # Detect Mishandled Exceptions
+    # 1. If the current instruction is *call*, add the top element and position of the stack to 'stack_addr'(dict) for tracking
+    #    Potential *Mishandled Exceptions error* increase 
+    global_vars.add_stack_addr(stack.len, stack.top())
+    global_vars.add_ethereum_mishandled_exceptions()
+
+def check_ethereum_mishandled_exceptions_step_two_eqz(stack: 'Stack') -> None:
+    # 2. If the current instruction is  *eqz*, check whether the position of the top element of the stack is being tracked 
+    #    and whether the top element of the stack is the element being tracked.
+    #    [TODO} top().n means the real value of the top of the stack? 
+    if (stack.len in global_vars.stack_addr and stack.top().n == global_vars.stack_addr[stack.len]):
+        global_vars.del_ethereum_mishandled_exceptions()
+
+        
+def check_ethereum_mishandled_exceptions_step_two_eq( a: 'int', b: 'int', a_len: 'int') -> None:
+    # 2. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
+    #    if yes, check if the top of the stack(a) after popping the stack is the tracked element
+    if (b == 0):
+        if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):
+            global_vars.del_ethereum_mishandled_exceptions()
 
 
 def detect_forged_transfer(store, frame, index):

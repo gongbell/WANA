@@ -46,6 +46,11 @@ class GlobalVariables:
         self.expensive_fallback = 0
         self.max_gas_cost = 0
 
+        # ethereum mishandled exceptions
+        self.ethereum_mishandled_exceptions = 0
+        self.mishhandled_exceptions_depth_limit = 0 # [TODO] 不需要间隔数限制吧？
+        self.stack_addr = dict() # key = Position in the stack, value = Value in stack
+
         # mode flag
         self.location_mode = False
         self.fake_detection_mode = False
@@ -88,6 +93,8 @@ class GlobalVariables:
         self.block_dependency_count = 0
         self.fake_eos_transfer_count = 0
         self.ethereum_delegate_call = 0
+        # [TODO] 修改mishandled exceptions为0？
+        self.ethereum_mishandled_exceptions = 0
         self.forged_transfer_notification_count = 0
 
         self.vm = None
@@ -169,6 +176,15 @@ class GlobalVariables:
 
     def find_ethereum_greedy(self) -> None:
         self.ethereum_greedy = 1
+
+    def add_ethereum_mishandled_exceptions(self) -> None:
+        self.ethereum_mishandled_exceptions += 1
+
+    def del_ethereum_mishandled_exceptions(self) -> None:
+        self.ethereum_mishandled_exceptions -= 1
+
+    def add_stack_addr(self, address: int, value: int) -> None:
+        self.stack_addr[address] = value
 
 
 global_vars = GlobalVariables()

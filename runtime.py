@@ -300,6 +300,7 @@ class Stack:
     def add(self, e):
         self.data.append(e)
 
+    # Push all the contents of a LIST onto the stack
     def ext(self, e: typing.List):
         for i in e:
             self.add(i)
