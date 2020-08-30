@@ -18,8 +18,9 @@ from bug_analyzer import check_block_dependence
 from bug_analyzer import check_ethereum_delegate_call
 from bug_analyzer import check_ethereum_greedy
 from bug_analyzer import check_ethereum_mishandled_exceptions_step_one
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_two_eqz
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_two_eq
+from bug_analyzer import check_ethereum_mishandled_exceptions_step_two
+from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eqz
+from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eq
 from bug_analyzer import cur_state_analysis
 
 from runtime import *
@@ -787,6 +788,10 @@ def exec_expr(
                 break
 
             if opcode == bin_format.call:
+                # detect Mishandled Exceptions
+                # track the position where *call* returns the result on the stack
+                check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments], stack)
+
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)
 
@@ -805,9 +810,6 @@ def exec_expr(
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
 
-                # detect Mishandled Exceptions
-                # track the position where *call* returns the result on the stack
-                check_ethereum_mishandled_exceptions_step_one(stack)
                 continue
 
             if opcode == bin_format.call_indirect:
@@ -1168,7 +1170,7 @@ def exec_expr(
             continue
         if opcode == bin_format.i32_eqz:
             # check ethereum mishandled exceptions
-            check_ethereum_mishandled_exceptions_step_two_eqz(stack)
+            check_ethereum_mishandled_exceptions_step_three_eqz(stack)
 
             object_a = stack.pop()
             a = object_a.n
@@ -1196,7 +1198,7 @@ def exec_expr(
 
             if opcode == bin_format.i32_eq:
                 # check ethereum mishandled exceptions
-                check_ethereum_mishandled_exceptions_step_two_eq(a, b, a_len)
+                check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
 
                 if utils.is_all_real(a, b):
                     computed = int(a == b)
@@ -1283,7 +1285,7 @@ def exec_expr(
 
         if opcode == bin_format.i64_eqz:
             # check ethereum mishandled exceptions
-            check_ethereum_mishandled_exceptions_step_two_eqz(stack)
+            check_ethereum_mishandled_exceptions_step_three_eqz(stack)
 
             object_a = stack.pop()
             a = object_a.n
@@ -1310,7 +1312,7 @@ def exec_expr(
 
             if opcode == bin_format.i64_eq:
                 # check ethereum mishandled exceptions
-                check_ethereum_mishandled_exceptions_step_two_eq(a, b, a_len)
+                check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
 
                 if utils.is_all_real(a, b):
                     computed = int(a == b)
@@ -1402,7 +1404,7 @@ def exec_expr(
             if utils.is_all_real(a, b):
                 if opcode == bin_format.f32_eq:
                     # check ethereum mishandled exceptions
-                    check_ethereum_mishandled_exceptions_step_two_eq(a, b, a_len)
+                    check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
 
                     stack.add(Value.from_i32(int(a == b)))
                     continue
@@ -1423,7 +1425,7 @@ def exec_expr(
                     continue
                 if opcode == bin_format.f64_eq:
                     # check ethereum mishandled exceptions
-                    check_ethereum_mishandled_exceptions_step_two_eq(a, b, a_len)
+                    check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
 
                     stack.add(Value.from_i32(int(a == b)))
                     continue

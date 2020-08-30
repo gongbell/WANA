@@ -166,25 +166,40 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
         global_vars.find_ethereum_delegate_call()
 
 
-def check_ethereum_mishandled_exceptions_step_one(stack: 'Stack') -> None:
+def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> None:
     """During symbolic execution, call it to detect mishandled_exceptions errors
     """
     # Detect Mishandled Exceptions
-    # 1. If the current instruction is *call*, add the top element and position of the stack to 'stack_addr'(dict) for tracking
-    #    Potential *Mishandled Exceptions error* increase 
-    global_vars.add_stack_addr(stack.len, stack.top())
-    global_vars.add_ethereum_mishandled_exceptions()
+    # 1. If the current instruction is *call*, and the parameter of *call* is *$ethereum.call* or *$ethereum.callCode*, 
+    #    Then set 'mishandled_exceptions_flag', indicating that there may be a risk, and further testing is required
+    #    Then potential *Mishandled Exceptions error* increase 
+    problematic_instructions = ['$ethereum.call','$ethereum.callCode']
+    for i, argument in enumerate(immediate_arguments):
+        if (argument in problematic_instructions):
+            global_vars.mishandled_exceptions_flag = 1
+    
 
-def check_ethereum_mishandled_exceptions_step_two_eqz(stack: 'Stack') -> None:
-    # 2. If the current instruction is  *eqz*, check whether the position of the top element of the stack is being tracked 
+    def check_ethereum_mishandled_exceptions_step_two(immediate_arguments:list, stack: 'Stack') -> None:
+    """During symbolic execution, call it to detect mishandled_exceptions errors
+    """
+    # Detect Mishandled Exceptions
+    # 2. If the 'mishandled_exceptions_flag' is 1, add the top element and position of the stack to 'stack_addr'(dict) for tracking
+    #    Then potential *Mishandled Exceptions error* increase 
+    if mishandled_exceptions_flag = 1:
+        global_vars.add_stack_addr(stack.len, stack.top())
+        global_vars.add_ethereum_mishandled_exceptions()
+        mishandled_exceptions_flag = 0
+
+def check_ethereum_mishandled_exceptions_step_three_eqz(stack: 'Stack') -> None:
+    # 3. If the current instruction is  *eqz*, check whether the position of the top element of the stack is being tracked 
     #    and whether the top element of the stack is the element being tracked.
     #    [TODO} top().n means the real value of the top of the stack? 
     if (stack.len in global_vars.stack_addr and stack.top().n == global_vars.stack_addr[stack.len]):
         global_vars.del_ethereum_mishandled_exceptions()
 
         
-def check_ethereum_mishandled_exceptions_step_two_eq( a: 'int', b: 'int', a_len: 'int') -> None:
-    # 2. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
+def check_ethereum_mishandled_exceptions_step_three_eq( a: 'int', b: 'int', a_len: 'int') -> None:
+    # 3. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
     #    if yes, check if the top of the stack(a) after popping the stack is the tracked element
     if (b == 0):
         if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):

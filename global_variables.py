@@ -50,6 +50,7 @@ class GlobalVariables:
         self.ethereum_mishandled_exceptions = 0
         self.mishhandled_exceptions_depth_limit = 0 # [TODO] 不需要间隔数限制吧？
         self.stack_addr = dict() # key = Position in the stack, value = Value in stack
+        self.mishandled_exceptions_flag = 0
 
         # mode flag
         self.location_mode = False
@@ -96,6 +97,7 @@ class GlobalVariables:
         # [TODO] 修改mishandled exceptions为0？
         self.ethereum_mishandled_exceptions = 0
         self.forged_transfer_notification_count = 0
+        self.mishandled_exceptions_flag = 0
 
         self.vm = None
         self.found_to_check = False
