@@ -64,6 +64,8 @@ class Runtime:
                 if (e.module in ('env',) and e.name in ('send_inline', 'send_deferred')
                         or e.module in ('ethereum',) and e.name in ('call',)):  # current version does not include 'callCode', 'callDelegate', 'callStatic'
                     global_vars.add_send_token_function_addr(len(self.store.funcs))
+                if (e.module in ('ethereum',) and e.name in ('call','callCode')):
+                    global_vars.add_mishandled_exceptions_call_function_addr(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('eosio_assert',):
                     global_vars.eosio_assert_addrs.add(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('action_data_size',):

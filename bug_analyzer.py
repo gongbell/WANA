@@ -173,9 +173,9 @@ def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> N
     # 1. If the current instruction is *call*, and the parameter of *call* is *$ethereum.call* or *$ethereum.callCode*, 
     #    Then set 'mishandled_exceptions_flag', indicating that there may be a risk, and further testing is required
     #    Then potential *Mishandled Exceptions error* increase 
-    problematic_instructions = ['$ethereum.call','$ethereum.callCode']
+    # problematic_instructions = ['$ethereum.call','$ethereum.callCode']
     for i, argument in enumerate(immediate_arguments):
-        if (argument in problematic_instructions):
+        if (argument in global_vars.mishandled_exceptions_call_function_addr):
             global_vars.mishandled_exceptions_flag = 1
     
 

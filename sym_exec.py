@@ -790,7 +790,7 @@ def exec_expr(
             if opcode == bin_format.call:
                 # detect Mishandled Exceptions
                 # track the position where *call* returns the result on the stack
-                check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments], stack)
+                check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
 
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)
@@ -890,7 +890,7 @@ def exec_expr(
             if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:
                 logger.debugln(f'm.data state {m.data}')
                 a = stack.pop().n + i.immediate_arguments[1]
-                if utils.is_symbolic(a):
+                if utils.is_symbolic(a):#if a is a symbolic, simplify a 
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_load:
                         if a not in memory_address_symbolic_variable:

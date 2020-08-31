@@ -48,7 +48,7 @@ class GlobalVariables:
 
         # ethereum mishandled exceptions
         self.ethereum_mishandled_exceptions = 0
-        self.mishhandled_exceptions_depth_limit = 0 # [TODO] 不需要间隔数限制吧？
+        self.mishandled_exceptions_call_function_addr = list() # store the addr of *$ethereum.call* or *$ethereum.callCode*
         self.stack_addr = dict() # key = Position in the stack, value = Value in stack
         self.mishandled_exceptions_flag = 0
 
@@ -184,6 +184,9 @@ class GlobalVariables:
 
     def del_ethereum_mishandled_exceptions(self) -> None:
         self.ethereum_mishandled_exceptions -= 1
+
+    def add_mishandled_exceptions_call_function_addr(self, address: int) -> None:
+        self.mishandled_exceptions_call_function_addr.append(address)
 
     def add_stack_addr(self, address: int, value: int) -> None:
         self.stack_addr[address] = value
