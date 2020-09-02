@@ -179,16 +179,18 @@ def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> N
             global_vars.mishandled_exceptions_flag = 1
     
 
-    def check_ethereum_mishandled_exceptions_step_two(immediate_arguments:list, stack: 'Stack') -> None:
+    def check_ethereum_mishandled_exceptions_step_two(stack: 'Stack') -> None:
     """During symbolic execution, call it to detect mishandled_exceptions errors
     """
     # Detect Mishandled Exceptions
     # 2. If the 'mishandled_exceptions_flag' is 1, add the top element and position of the stack to 'stack_addr'(dict) for tracking
     #    Then potential *Mishandled Exceptions error* increase 
-    if mishandled_exceptions_flag = 1:
-        global_vars.add_stack_addr(stack.len, stack.top())
+    if global_vars.mishandled_exceptions_flag == 1:
+        if(stack.len not in stack_addr):
+            global_vars.add_stack_addr(stack.len, stack.top())
+        else 
         global_vars.add_ethereum_mishandled_exceptions()
-        mishandled_exceptions_flag = 0
+        global_vars.mishandled_exceptions_flag = 0
 
 def check_ethereum_mishandled_exceptions_step_three_eqz(stack: 'Stack') -> None:
     # 3. If the current instruction is  *eqz*, check whether the position of the top element of the stack is being tracked 
@@ -204,6 +206,7 @@ def check_ethereum_mishandled_exceptions_step_three_eq( a: 'int', b: 'int', a_le
     if (b == 0):
         if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):
             global_vars.del_ethereum_mishandled_exceptions()
+            global_vars.stack_addr.del(a_len)
 
 
 def detect_forged_transfer(store, frame, index):

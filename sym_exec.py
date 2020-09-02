@@ -788,12 +788,16 @@ def exec_expr(
                 break
 
             if opcode == bin_format.call:
-                # detect Mishandled Exceptions
+                # detect Mishandled Exceptions step 1
                 # track the position where *call* returns the result on the stack
                 check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
 
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)
+
+                # detect Mishandled Exceptions step 2
+                # track the position where *call* returns the result on the stack
+                check_ethereum_mishandled_exceptions_step_two(stack)
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
