@@ -1288,9 +1288,6 @@ def exec_expr(
             continue
 
         if opcode == bin_format.i64_eqz:
-            # check ethereum mishandled exceptions
-            check_ethereum_mishandled_exceptions_step_three_eqz(stack)
-
             object_a = stack.pop()
             a = object_a.n
             if utils.is_all_real(a):
@@ -1306,7 +1303,6 @@ def exec_expr(
         if bin_format.i64_eq <= opcode <= bin_format.i64_geu:
             object_b = stack.pop()
             b = object_b.n
-            a_len = stack.len()
             object_a = stack.pop()
             a = object_a.n
 
@@ -1315,9 +1311,6 @@ def exec_expr(
                                   or id(object_b) in global_vars.block_number_id_list)
 
             if opcode == bin_format.i64_eq:
-                # check ethereum mishandled exceptions
-                check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
-
                 if utils.is_all_real(a, b):
                     computed = int(a == b)
                 else:
@@ -1403,13 +1396,9 @@ def exec_expr(
 
         if bin_format.f32_eq <= opcode <= bin_format.f64_ge:
             b = stack.pop().n
-            a_len = stack.len()
             a = stack.pop().n
             if utils.is_all_real(a, b):
                 if opcode == bin_format.f32_eq:
-                    # check ethereum mishandled exceptions
-                    check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
-
                     stack.add(Value.from_i32(int(a == b)))
                     continue
                 if opcode == bin_format.f32_ne:
@@ -1428,9 +1417,6 @@ def exec_expr(
                     stack.add(Value.from_i32(int(a >= b)))
                     continue
                 if opcode == bin_format.f64_eq:
-                    # check ethereum mishandled exceptions
-                    check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
-
                     stack.add(Value.from_i32(int(a == b)))
                     continue
                 if opcode == bin_format.f64_ne:

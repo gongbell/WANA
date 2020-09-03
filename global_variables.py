@@ -52,6 +52,10 @@ class GlobalVariables:
         self.stack_addr = dict() # key = Position in the stack, value = Value in stack
         self.mishandled_exceptions_flag = 0
 
+        # ethereum reentrancy detection
+        self.ethereum_reentrancy_detection = 0
+        
+
         # mode flag
         self.location_mode = False
         self.fake_detection_mode = False

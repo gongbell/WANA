@@ -188,7 +188,9 @@ def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> N
     if global_vars.mishandled_exceptions_flag == 1:
         if(stack.len not in stack_addr):
             global_vars.add_stack_addr(stack.len, stack.top())
-        else 
+        else :  # It means that the value at this position has been accidentally popped on the stack before, 
+                # [TODO]so it is considered that there is a bug?
+            global_vars.stack_addr[stack.len] = stack.top()
         global_vars.add_ethereum_mishandled_exceptions()
         global_vars.mishandled_exceptions_flag = 0
 
@@ -203,10 +205,11 @@ def check_ethereum_mishandled_exceptions_step_three_eqz(stack: 'Stack') -> None:
 def check_ethereum_mishandled_exceptions_step_three_eq( a: 'int', b: 'int', a_len: 'int') -> None:
     # 3. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
     #    if yes, check if the top of the stack(a) after popping the stack is the tracked element
-    if (b == 0):
-        if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):
-            global_vars.del_ethereum_mishandled_exceptions()
-            global_vars.stack_addr.del(a_len)
+    if not utils.is_symbolic(b):
+        if b == 0):
+            if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):
+                global_vars.del_ethereum_mishandled_exceptions()
+                global_vars.stack_addr.del(a_len)
 
 
 def detect_forged_transfer(store, frame, index):
