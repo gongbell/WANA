@@ -17,6 +17,9 @@ class GlobalVariables:
         # global path conditions and path results
         self.path_conditions_and_results = {"path_conditions": [], "results": []}
 
+        # the state of the current current contract, just like global_state in oyente
+        self.global_state = {}
+
         # last stack
         self.last_stack = []
 
@@ -54,7 +57,7 @@ class GlobalVariables:
 
         # ethereum reentrancy detection
         self.ethereum_reentrancy_detection = 0
-        
+        self.reentrancy_detection_call_function_addr = list() # store the addr of *$ethereum.call* or *$ethereum.callCode*,也许还有其他的？
 
         # mode flag
         self.location_mode = False
@@ -98,10 +101,13 @@ class GlobalVariables:
         self.block_dependency_count = 0
         self.fake_eos_transfer_count = 0
         self.ethereum_delegate_call = 0
-        # [TODO] 修改mishandled exceptions为0？
         self.ethereum_mishandled_exceptions = 0
         self.forged_transfer_notification_count = 0
         self.mishandled_exceptions_flag = 0
+        
+        # [TODO] 修改mishandled_exceptions_call_function_addr置空？
+        # [TODO] 修改reentrancy_detection_call_function_addr置空？
+        # [TODO] 修改stack_addr置空？
 
         self.vm = None
         self.found_to_check = False
@@ -195,5 +201,7 @@ class GlobalVariables:
     def add_stack_addr(self, address: int, value: int) -> None:
         self.stack_addr[address] = value
 
+    def add_reentrancy_detection_call_function_addr(self, address: int) -> None:
+        self.reentrancy_detection_call_function_addr.append(address)
 
 global_vars = GlobalVariables()

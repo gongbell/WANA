@@ -21,6 +21,7 @@ from bug_analyzer import check_ethereum_mishandled_exceptions_step_one
 from bug_analyzer import check_ethereum_mishandled_exceptions_step_two
 from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eqz
 from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eq
+from bug_analyzer import check_ethereum_reentrancy_detection
 from bug_analyzer import cur_state_analysis
 
 from runtime import *
@@ -788,9 +789,11 @@ def exec_expr(
                 break
 
             if opcode == bin_format.call:
-                # detect Mishandled Exceptions step 1
-                # track the position where *call* returns the result on the stack
+                # detect Ethereum Mishandled Exceptions step 1
                 check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
+
+                # detect Ethereum Reentrancy Detection
+                check_ethereum_reentrancy_detection(path_condition, stack)
 
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)
@@ -891,16 +894,20 @@ def exec_expr(
 
         if bin_format.i32_load <= opcode <= bin_format.grow_memory:
             m = store.mems[module.memaddrs[0]]
-            if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:
+            if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:#弹栈取操作数，与立即数相加得到地址，从内存中读取地址，压栈
                 logger.debugln(f'm.data state {m.data}')
-                a = stack.pop().n + i.immediate_arguments[1]
-                if utils.is_symbolic(a):#if a is a symbolic, simplify a 
+                a = stack.pop().n + i.immediate_arguments[1]# Wasm采用了“立即数+操作数”的内存寻址方式，a是操作数，i.immediate_arguments[1]是立即数
+                """ if not utils.is_symbolic(a):    #如果'a'是个实数,那么从对应内存中取值即可。If 'a' is a real number, the value can be taken from the corresponding memory
+                    value = global_state["Ia"][position]
+                    stack.add(Value.from_i32()) """
+                if utils.is_symbolic(a):# if a is a symbolic, simplify a 
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_load:
-                        if a not in memory_address_symbolic_variable:
+                        if a not in memory_address_symbolic_variable:#如果对应地址(a)不在内存地址变量组中，那么给该地址赋一个随机数
                             memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                        #[TODO]path_condition.append()
                         stack.add(Value.from_i32(number.MemoryLoad.i32(
-                            m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
+                            m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))# m.data 是内存吗？
                         continue
                     if opcode == bin_format.i64_load:
                         if a not in memory_address_symbolic_variable:

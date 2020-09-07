@@ -8,6 +8,7 @@ import ctypes
 from typing import Union
 import six
 import z3
+from z3.z3util import get_vars
 import bin_format
 
 
@@ -114,6 +115,24 @@ def gen_symbolic_args(func: 'instance.FunctionInstance'):
             # another approach
             symbolic_params.append(z3.FP(f'f64_{i}', z3.Float64()))
     return symbolic_params
+
+def is_storage_var(var):
+    ''' return true if var is startswith 'Ia_store'
+    '''
+    if not isinstance(var, str):    #if type of var is not str, let var = str of decl
+         var = var.decl().name()
+    return var.startswith('Ia_store') 
+
+def get_storage_position(var):
+    ''' return [TODO] the description need to be complished
+    '''
+    if not isinstance(var, str): 
+        var = var.decl().name()
+    pos = var.split('-')[1]
+    try: 
+        return int(pos)
+    except: 
+        return pos
 
 
 if __name__ == '__main__':

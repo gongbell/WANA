@@ -124,22 +124,6 @@ def function_analysis(vm) -> None:
         if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
             global_vars.cannot_send_ETH = True
 
-        # Detect Mishandled Exceptions
-        # 1. Analyzing instruction sequentially.
-        # 2. If the current instruction is *call*, then track the position of the *call* return result on the stack.
-        # 3. If *ethereum.drop* and *ethereum.eq* do not appear in the interval of n instructions, then there is an error.
-        '''for index, func in enumerate(funcs):
-            expr = func.expr
-            for i, instr in enumerate(expr.data):
-                if (instr.code == bin_format.call):
-                    # Track where this instruction is pushed onto the stack
-                    call_result = stack.len()
-                    for i,instr in enumerate():
-                        '''
-
-
-
-
 def check_block_dependence(block_number_flag: bool) -> None:
     """During symbolic execution, it is called when the 
     transfer call is satisfied and the parameters used 
@@ -168,6 +152,7 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
 
 def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> None:
     """During symbolic execution, call it to detect mishandled_exceptions errors
+    If the parameter contains' call 'or' callCode ', step 2 can be executed
     """
     # Detect Mishandled Exceptions
     # 1. If the current instruction is *call*, and the parameter of *call* is *$ethereum.call* or *$ethereum.callCode*, 
@@ -179,7 +164,7 @@ def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> N
             global_vars.mishandled_exceptions_flag = 1
     
 
-    def check_ethereum_mishandled_exceptions_step_two(stack: 'Stack') -> None:
+def check_ethereum_mishandled_exceptions_step_two(stack: 'Stack') -> None:
     """During symbolic execution, call it to detect mishandled_exceptions errors
     """
     # Detect Mishandled Exceptions
@@ -206,10 +191,46 @@ def check_ethereum_mishandled_exceptions_step_three_eq( a: 'int', b: 'int', a_le
     # 3. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
     #    if yes, check if the top of the stack(a) after popping the stack is the tracked element
     if not utils.is_symbolic(b):
-        if b == 0):
+        if (b == 0):
             if (a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]):
                 global_vars.del_ethereum_mishandled_exceptions()
                 global_vars.stack_addr.del(a_len)
+
+def check_ethereum_reentrancy_detection(path_condition , stack: 'Stack') -> None:   # path_condition is list()?
+    """During symbolic execution, call it to Reentrancy Detection errors
+    """
+    # Detect Reentrancy Detection
+    new_path_condition = []
+    for i, argument in enumerate(immediate_arguments):
+        if (argument in global_vars.reentrancy_detection_call_function_addr):  #如果call的参数含'call'或'callCode',则继续
+            for i, expr in enumerate(path_condition):
+                if not utils.is_expr(expr): # only handle expr？why?
+                    continue
+                vars = get_vars(expr)   # 
+                for j, var in enumerate(vars):
+                    if var in memory_address_symbolic_variable: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
+                        # [TODO]区分i32、i64等？下行代码以i32为例
+                        pos = memory_address_symbolic_variable[var]#取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址。
+                        if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
+                            # [TODO] 使用in的形式判断吗？pos是个地址，是不是应该pos<len(global_state['Ia'])
+                            new_path_condition.append(var == global_state['Ia'][pos])#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
+                            
+
+                        new_path_condition.append(var == )#新约束增加：var==对应内存位置的变量
+                        # [TODO]问题1：var是个变量，可是内存中存的到底是个啥啊？是数字吗？
+                        # [TODO]问题2
+
+"""                         pos = get_storage_position(var)
+                        if pos in global_state['Ia']:#如果符号值是内存中取出的，检测实际情况这个位置的变量  ??
+                            new_path_condition.append(var == global_state['Ia'][pos])#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
+                        # [TODO]  """
+            solver = Solver()
+            solver.add(path_condition)
+            solver.add(new_path_condition)
+            ret_val = not (solver.check() == unsat)#检测一下是不是能够满足条件
+            return ret_val
+
+
 
 
 def detect_forged_transfer(store, frame, index):

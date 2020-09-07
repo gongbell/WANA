@@ -14,6 +14,7 @@ class Store:
     """The store represents all global state that can be manipulated by WebAssembly programs. It consists of the runtime
     representation of all instances of functions, tables, memories, and globals that have been allocated during the
     life time of the abstract machine
+    存储区表示可由WebAssembly程序操作的所有全局状态。它由在抽象机器的生命周期内分配的所有函数、表、内存和全局变量的实例的运行时表示组成
     Syntactically, the store is defined as a record listing the existing instances of each category:
     store ::= {
         funcs funcinst∗
@@ -25,6 +26,8 @@ class Store:
     Addresses are dynamic, globally unique references to runtime objects, in contrast to indices, which are static,
     module-local references to their original definitions. A memory address memaddr denotes the abstract address of
     a memory instance in the store, not an offset inside a memory instance.
+    地址是对运行时对象的动态、全局唯一的引用，而索引是对其原始定义的静态、模块本地引用。
+    内存地址memaddr表示存储器中内存实例的抽象地址，而不是内存实例内的偏移量。
 
     Attributes:
         funcs: list of function instance

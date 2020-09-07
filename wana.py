@@ -66,6 +66,8 @@ class Runtime:
                     global_vars.add_send_token_function_addr(len(self.store.funcs))
                 if (e.module in ('ethereum',) and e.name in ('call','callCode')):
                     global_vars.add_mishandled_exceptions_call_function_addr(len(self.store.funcs))
+                if (e.module in ('ethereum',) and e.name in ('call','callCode')):   # Store index information for 'call' or 'callcode' 
+                    global_vars.add_reentrancy_detection_call_function_addr(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('eosio_assert',):
                     global_vars.eosio_assert_addrs.add(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('action_data_size',):

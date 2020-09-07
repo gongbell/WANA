@@ -409,6 +409,7 @@ class Table:
 class Memory:
     """The mems component of a module defines a vector of linear memories (or memories for short) as described by their
     memory type.
+    模块的mems组件定义了线性存储器（或简称存储器）的向量，如其存储器类型所述
 
     mem ::= {type memtype}
 
