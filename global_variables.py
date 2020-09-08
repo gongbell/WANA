@@ -204,4 +204,7 @@ class GlobalVariables:
     def add_reentrancy_detection_call_function_addr(self, address: int) -> None:
         self.reentrancy_detection_call_function_addr.append(address)
 
+    def find_reentrancy_detection(self) -> None:
+        self.ethereum_reentrancy_detection +=1
+
 global_vars = GlobalVariables()

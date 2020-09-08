@@ -219,7 +219,8 @@ def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', im
             solver.add(path_condition)
             solver.add(new_path_condition)
             ret_val = not (solver.check() == unsat)#检测一下是不是能够满足条件
-            return ret_val
+            if ret_val:
+                global_vars.find_reentrancy_detection()
 
 
 
