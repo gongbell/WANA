@@ -37,6 +37,7 @@ path_abort = False
 path_depth = 0
 block_number_flag = False
 gas_cost = 0
+global_state = {}
 
 
 class ModuleInstance:
@@ -450,7 +451,7 @@ def init_variables(init_constraints: list = ()) -> None:
     """Initialize the variables.
     """
     global path_condition, memory_address_symbolic_variable, gas_cost, solver, \
-        recur_depth, loop_depth_dict, path_abort, path_depth, block_number_flag
+        recur_depth, loop_depth_dict, path_abort, path_depth, block_number_flag, global_state
     solver = z3.Solver()
     solver.add(init_constraints)
     path_condition = []
@@ -461,6 +462,7 @@ def init_variables(init_constraints: list = ()) -> None:
     path_depth = 0
     block_number_flag = False
     gas_cost = 0
+    global_state = {}
 
 
 def exec_expr(
@@ -793,7 +795,7 @@ def exec_expr(
                 check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
 
                 # detect Ethereum Reentrancy Detection
-                check_ethereum_reentrancy_detection(path_condition, stack)
+                check_ethereum_reentrancy_detection(path_condition, stack, module.funcaddrs[i.immediate_arguments], memory_address_symbolic_variable, global_state)
 
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)
@@ -904,86 +906,142 @@ def exec_expr(
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_load:
                         if a not in memory_address_symbolic_variable:#如果对应地址(a)不在内存地址变量组中，那么给该地址赋一个随机数
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load')
                         #[TODO]path_condition.append()
                         stack.add(Value.from_i32(number.MemoryLoad.i32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))# m.data 是内存吗？
                         continue
                     if opcode == bin_format.i64_load:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 8))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load')
                         stack.add(Value.from_i64(number.MemoryLoad.i64(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 8])))
                         continue
                     if opcode == bin_format.f32_load:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for f32_load')
                         stack.add(Value.from_f32(number.LittleEndian.f32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     if opcode == bin_format.f64_load:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 8))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for f64_load')
                         stack.add(Value.from_f64(number.LittleEndian.f64(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 8])))
                         continue
                     if opcode == bin_format.i32_load8_s:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_s')
                         stack.add(Value.from_i32(number.MemoryLoad.i8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i32_load8_u:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_u')
                         stack.add(Value.from_i32(number.MemoryLoad.u8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i32_load16_s:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_s')
                         stack.add(Value.from_i32(number.MemoryLoad.i16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i32_load16_u:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_u')
                         stack.add(Value.from_i32(number.MemoryLoad.u16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load8_s:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_s')
                         stack.add(Value.from_i64(number.MemoryLoad.i8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i64_load8_u:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_u')
                         stack.add(Value.from_i64(number.MemoryLoad.u8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i64_load16_s:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_s')
                         stack.add(Value.from_i64(number.MemoryLoad.i16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load16_u:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_u')
                         stack.add(Value.from_i64(number.MemoryLoad.u16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load32_s:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 4))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_s')
                         stack.add(Value.from_i64(number.MemoryLoad.i32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     if opcode == bin_format.i64_load32_u:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 4))
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_u')
                         stack.add(Value.from_i64(number.MemoryLoad.u32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
@@ -1056,55 +1114,91 @@ def exec_expr(
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_store:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_i32(v)
                         continue
                     if opcode == bin_format.i64_store:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 8)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 8] = number.MemoryStore.pack_i64(v)
                         continue
                     if opcode == bin_format.f32_store:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for f32_store')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_f32(v)
                         continue
                     if opcode == bin_format.f64_store:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 8)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for f64_store')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 8] = number.MemoryStore.pack_f64(v)
                         continue
                     if opcode == bin_format.i32_store8:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store8')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 1] = number.MemoryStore.pack_i8(v)
                         continue
                     if opcode == bin_format.i32_store16:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 2)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store16')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 2] = number.MemoryStore.pack_i16(v)
                         continue
                     if opcode == bin_format.i64_store8:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store8')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 1] = number.MemoryStore.pack_i8(v)
                         continue
                     if opcode == bin_format.i64_store16:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 2)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store16')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 2] = number.MemoryStore.pack_i16(v)
                         continue
                     if opcode == bin_format.i64_store32:
                         if a not in memory_address_symbolic_variable:
-                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
+                            try:
+                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                            except Exception as e:
+                                # [TODO] better method to handle exception
+                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store32')
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_i32(v)
                         continue
