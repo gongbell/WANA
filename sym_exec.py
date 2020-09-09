@@ -795,7 +795,8 @@ def exec_expr(
                 check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
 
                 # detect Ethereum Reentrancy Detection
-                check_ethereum_reentrancy_detection(path_condition, stack, module.funcaddrs[i.immediate_arguments], memory_address_symbolic_variable, global_state)
+                check_ethereum_reentrancy_detection(path_condition, stack, module.funcaddrs[i.immediate_arguments],
+                                                    memory_address_symbolic_variable, global_state, solver)
 
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 stack.ext(r)

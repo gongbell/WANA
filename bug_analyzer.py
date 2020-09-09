@@ -198,7 +198,8 @@ def check_ethereum_mishandled_exceptions_step_three_eq( a: 'int', b: 'int', a_le
                 global_vars.del_ethereum_mishandled_exceptions()
                 global_vars.stack_addr.pop(a_len)
 
-def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', immediate_arguments:list, memory_address_symbolic_variable: dict, global_state:dict) -> None:   # [TODO]path_condition is list()?
+def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', immediate_arguments:list,
+                                        memory_address_symbolic_variable: dict, global_state:dict, solver) -> None:   # [TODO]path_condition is list()?
     """During symbolic execution, call it to Reentrancy Detection errors
     """
     # Detect Reentrancy Detection
