@@ -907,7 +907,9 @@ def exec_expr(
                     if opcode == bin_format.i32_load:
                         if a not in memory_address_symbolic_variable:#如果对应地址(a)不在内存地址变量组中，那么给该地址赋一个随机数
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load')
@@ -918,7 +920,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                                position = m.get_unused_position(8)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load')
@@ -928,7 +932,9 @@ def exec_expr(
                     if opcode == bin_format.f32_load:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for f32_load')
@@ -938,7 +944,9 @@ def exec_expr(
                     if opcode == bin_format.f64_load:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                                position = m.get_unused_position(8)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for f64_load')
@@ -948,7 +956,9 @@ def exec_expr(
                     if opcode == bin_format.i32_load8_s:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_s')
@@ -958,7 +968,9 @@ def exec_expr(
                     if opcode == bin_format.i32_load8_u:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_u')
@@ -968,7 +980,9 @@ def exec_expr(
                     if opcode == bin_format.i32_load16_s:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_s')
@@ -978,7 +992,9 @@ def exec_expr(
                     if opcode == bin_format.i32_load16_u:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_u')
@@ -988,7 +1004,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load8_s:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_s')
@@ -998,7 +1016,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load8_u:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_u')
@@ -1008,7 +1028,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load16_s:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_s')
@@ -1018,7 +1040,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load16_u:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_u')
@@ -1028,7 +1052,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load32_s:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_s')
@@ -1038,7 +1064,9 @@ def exec_expr(
                     if opcode == bin_format.i64_load32_u:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_u')
@@ -1115,7 +1143,9 @@ def exec_expr(
                     if opcode == bin_format.i32_store:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store')
@@ -1125,7 +1155,9 @@ def exec_expr(
                     if opcode == bin_format.i64_store:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                                position = m.get_unused_position(8)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store')
@@ -1135,7 +1167,9 @@ def exec_expr(
                     if opcode == bin_format.f32_store:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for f32_store')
@@ -1145,7 +1179,9 @@ def exec_expr(
                     if opcode == bin_format.f64_store:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(8)
+                                position = m.get_unused_position(8)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for f64_store')
@@ -1155,7 +1191,9 @@ def exec_expr(
                     if opcode == bin_format.i32_store8:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store8')
@@ -1165,7 +1203,9 @@ def exec_expr(
                     if opcode == bin_format.i32_store16:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store16')
@@ -1175,7 +1215,9 @@ def exec_expr(
                     if opcode == bin_format.i64_store8:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(1)
+                                position = m.get_unused_position(1)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store8')
@@ -1185,7 +1227,9 @@ def exec_expr(
                     if opcode == bin_format.i64_store16:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(2)
+                                position = m.get_unused_position(2)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store16')
@@ -1195,7 +1239,9 @@ def exec_expr(
                     if opcode == bin_format.i64_store32:
                         if a not in memory_address_symbolic_variable:
                             try:
-                                memory_address_symbolic_variable[a] = m.get_unused_position(4)
+                                position = m.get_unused_position(4)
+                                memory_address_symbolic_variable[a] = position
+                                global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store32')
