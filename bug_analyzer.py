@@ -217,12 +217,13 @@ def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', im
                         pos = memory_address_symbolic_variable[var]#取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址。
                         if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
                             new_path_condition.append(var == global_state['Ia'][pos])#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
-            solver = Solver()
+            solver.push()
             solver.add(path_condition)
             solver.add(new_path_condition)
             ret_val = not (solver.check() == unsat)#检测一下是不是能够满足条件
             if ret_val:
                 global_vars.find_reentrancy_detection()
+            solver.pop()
 
 
 

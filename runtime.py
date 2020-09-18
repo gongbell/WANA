@@ -151,6 +151,7 @@ class MemoryInstance:
     def get_unused_position(self, type: int):
         '''find unused position from 'self.data', then return random from these start position
         '''
+        type = 1
         random_list = []
         for i in range(self.size - type + 1):
             flag = 0

@@ -913,6 +913,13 @@ def exec_expr(
                                 global_state['Ia'][position] = a
                             except Exception as e:
                                 # [TODO] better method to handle exception
+                                solver.push()
+                                for var in memory_address_symbolic_variable:
+                                    solver.add(var == a)
+                                    if solver.check() == sat:
+                                        position = memory_address_symbolic_variable[var]
+                                        memory_address_symbolic_variable[a] = position
+                                        global_state['Ia'][position] = a#[TODO] 复查一遍bug，顺便扩充到其他的地方
                                 logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load')
                         #[TODO]path_condition.append()
                         stack.add(Value.from_i32(number.MemoryLoad.i32(
