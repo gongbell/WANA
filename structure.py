@@ -171,8 +171,6 @@ class Instruction:
     """Instructions are encoded by opcodes. Each opcode is represented by a single byte, and is followed by the
     instruction’s immediate arguments, where present. The only exception are structured control instructions,
     which consist of several opcodes bracketing their nested instruction sequences.
-    指令由操作码编码。 每个操作码均由一个字节表示，并在该指令后紧跟指令的直接参数（如果有）。 
-    唯一的例外是结构化控制指令，它由包围其嵌套指令序列的几个操作码组成。
 
     Attributes:
         code: an integer represent the instruction
