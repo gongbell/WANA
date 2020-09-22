@@ -397,6 +397,8 @@ def after_sym_exec(name):
         logger.println(f'{name}: greedy found')
     if global_vars.ethereum_mishandled_exceptions > 0:
         logger.println(f'{name}: mishandled_exceptions found')
+    if global_vars.ethereum_reentrancy_detection > 0:
+        logger.println(f'{name}: reentrancy detection found')
 
 
 if __name__ == '__main__':
