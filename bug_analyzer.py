@@ -129,26 +129,26 @@ def detect_greedy(vm) -> None:
         for index, func in enumerate(funcs):
             if exist_send_or_transfer:
                 break
+            expr = func.expr
             if index == main_index:
-                expr = func.expr
-                pc_start_func = 0
-                pc_end_func = 0
+                pc_start_main_func = 0
+                pc_end_main_func = 0
                 pc_start_fallback = 0
                 pc_end_fallback = 0
                 for i, instr in enumerate(expr.data):
                     if instr.code == bin_format.i64_const and instr.immediate_arguments > 10000000:
-                        pc_start_func = i
+                        pc_start_main_func = i
                     elif instr.code == bin_format.else_:
-                        pc_end_func = i
+                        pc_end_main_func = i
                     elif call_library_function(instr, library_offset, '$iszero'):
                         pc_start_fallback = i
                     elif call_library_function(instr, library_offset, '$stop'):
                         pc_end_fallback = i
-                    if pc_start_func > 0 and pc_end_func > 0:
-                        if check_function_payable(expr.data[pc_start_func:pc_end_func+1]):
+                    if pc_start_main_func > 0 and pc_end_main_func > 0:
+                        if check_function_payable(expr.data[pc_start_main_func:pc_end_main_func+1]):
                             payable_function += 1
-                        pc_start_func = 0
-                        pc_end_func = 0
+                        pc_start_main_func = 0
+                        pc_end_main_func = 0
                     if pc_start_fallback > 0 and pc_end_fallback > 0:
                         if check_function_payable(expr.data[pc_start_fallback:pc_end_fallback+1]):
                             payable_function += 1
@@ -345,9 +345,6 @@ def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', im
             if ret_val:
                 global_vars.find_reentrancy_detection()
             solver.pop()
-
-
-
 
 def detect_forged_transfer(store, frame, index):
     """Forge transfer notification vulnerability analysis function, and it is called
