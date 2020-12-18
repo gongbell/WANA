@@ -103,6 +103,123 @@ def function_analysis(vm) -> None:
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
                         global_vars.find_ethereum_delegate_call()
 
+        # check greedy in ethereum
+        detect_greedy(vm)
+
+def detect_greedy(vm) -> None:
+    """Analysis function, it read the opcode and arguments of function 
+    and detect vulnerability of smart contract. The analysis result will 
+    be store in global varibles.
+
+    Args:
+        vm: the virtual include env and structure.
+    """
+    global library_function_dict
+    global library_offset
+    funcs = vm.module.funcs
+    # if the analyzed contract is ethereum
+    if global_vars.contract_type == 'ethereum':
+        # 1. Count the non payable functions, finally get the number of payable functions.
+        # 2. If there are payable functions in the contract but no *ethereum.call*, greedy exists.
+        offset = len(vm.module.imports)
+        library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
+        main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
+        exist_send_or_transfer = False
+        payable_function = 0 
+        for index, func in enumerate(funcs):
+            if exist_send_or_transfer:
+                break
+            if index == main_index:
+                expr = func.expr
+                pc_start_func = 0
+                pc_end_func = 0
+                pc_start_fallback = 0
+                pc_end_fallback = 0
+                for i, instr in enumerate(expr.data):
+                    if instr.code == bin_format.i64_const and instr.immediate_arguments > 10000000:
+                        pc_start_func = i
+                    elif instr.code == bin_format.else_:
+                        pc_end_func = i
+                    elif call_library_function(instr, library_offset, '$iszero'):
+                        pc_start_fallback = i
+                    elif call_library_function(instr, library_offset, '$stop'):
+                        pc_end_fallback = i
+                    if pc_start_func > 0 and pc_end_func > 0:
+                        if check_function_payable(expr.data[pc_start_func:pc_end_func+1]):
+                            payable_function += 1
+                        pc_start_func = 0
+                        pc_end_func = 0
+                    if pc_start_fallback > 0 and pc_end_fallback > 0:
+                        if check_function_payable(expr.data[pc_start_fallback:pc_end_fallback+1]):
+                            payable_function += 1
+                        pc_start_fallback = 0
+                        pc_end_fallback = 0
+                continue
+            if len(funcs) - index <= 125:
+                continue
+            for i, instr in enumerate(expr.data):
+                if call_library_function(instr, library_offset, '$call'):
+                    exist_send_or_transfer = True 
+                    break
+        if not exist_send_or_transfer and payable_function:
+            global_vars.ethereum_greedy = 1
+
+def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
+    """Check whether the current instruction is *call* and whether its parameter is a specific library function
+    Args:
+        instr: the instruction now check
+        library_offset: offset between simple functions and library functions 
+        library_func_name: name of library function being compared
+    """
+    global library_function_dict
+    if instr.code == bin_format.call and instr.immediate_arguments == (library_offset + library_function_dict[library_func_name]):
+        return True
+    else:
+        return False
+
+def check_function_payable(instrs:list) -> bool:
+    """
+    Check whether the function contains the keyword 'payable'
+    Args:
+        instrs: the instructions of function
+    """
+    global library_offset
+    exist_callvalue = False
+    exist_revert = False
+    for instr in instrs:
+        if call_library_function(instr, library_offset, '$callvalue'):
+            exist_callvalue = True
+        if call_library_function(instr, library_offset, '$revert'):
+            exist_revert = True
+        if exist_callvalue and exist_revert:
+            return False
+    return True
+
+def function_analysis_old(vm) -> None:
+    """Analysis function, it read the opcode and arguments of function 
+    and detect vulnerability of smart contract. The analysis result will 
+    be store in global varibles.
+    暂时废弃，于2020/12/18
+    Args:
+        vm: the virtual include env and structure.
+    """
+
+    funcs = vm.module.funcs
+    # if the analyzed contract is ethereum
+    if global_vars.contract_type == 'ethereum':
+        # 1. Analyzing instruction sequentially.
+        # 2. If the current instruction is *call* and its argument is *ethereum.delegateCall*, then checking.
+        # 3. The parameters of ethereum.delegateCall are on stack, and the first parameter is
+        #    address to delegate call.
+        # 4. It is dangerous delegate call if the address is source from input.
+        for index, func in enumerate(funcs):
+            expr = func.expr
+            for i, instr in enumerate(expr.data):
+                if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
+                        in global_vars.call_delegate_addr:
+                    if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
+                        global_vars.find_ethereum_delegate_call()
+
         # 1. Count the non payable functions, finally get the number of payable functions.
         # 2. If there are payable functions in the contract but no *ethereum.call*, greedy exists.
         non_payable_count = 0
@@ -218,7 +335,6 @@ def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', im
                 vars = get_vars(expr)   # 
                 for var in vars:
                     if var in memory_address_symbolic_variable: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
-                        # [TODO]区分i32、i64等？下行代码以i32为例
                         pos = memory_address_symbolic_variable[var]#取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址。
                         if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
                             new_path_condition.append(var == global_state['Ia'][pos])#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
@@ -640,3 +756,132 @@ N_call_instructions_sequence = [
     [bin_format.set_local, None],
     [bin_format.i64_const, 0]
 ]
+
+library_function_dict = {
+    'offset' : 33,
+    '$add_carry' : 34,
+    '$add' : 35,
+    '$sub' : 36,
+    '$sub320' : 37,
+    '$sub512' : 38,
+    '$mul_64x64_128' : 39,
+    '$mul_128x128_256' : 40,
+    '$mul_256x256_512' : 41,
+    '$mul' : 42,
+    '$div' : 43,
+    '$sdiv' : 44,
+    '$mod' : 45,
+    '$mod320' : 46,
+    '$mod512' : 47,
+    '$smod' : 48,
+    '$exp' : 49,
+    '$addmod' : 50,
+    '$mulmod' : 51,
+    '$signextend' : 52,
+    '$bit_negate' : 53,
+    '$split' : 54,
+    '$shl_internal' : 55,
+    '$shr_internal' : 56,
+    '$shl320_internal' : 57,
+    '$shr320_internal' : 58,
+    '$shl512_internal' : 59,
+    '$shr512_internal' : 60,
+    '$byte' : 61,
+    '$xor' : 62,
+    '$or' : 63,
+    '$and' : 64,
+    '$not' : 65,
+    '$shl_single' : 66,
+    '$shl' : 67,
+    '$shr_single' : 68,
+    '$shr' : 69,
+    '$sar' : 70,
+    '$iszero' : 71,
+    '$iszero256' : 72,
+    '$iszero320' : 73,
+    '$iszero512' : 74,
+    '$eq' : 75,
+    '$cmp' : 76,
+    '$lt_320x320_64' : 77,
+    '$lt_512x512_64' : 78,
+    '$lt_256x256_64' : 79,
+    '$lt' : 80,
+    '$gte_256x256_64' : 81,
+    '$gte_320x320_64' : 82,
+    '$gte_512x512_64' : 83,
+    '$gt' : 84,
+    '$slt' : 85,
+    '$sgt' : 86,
+    '$u256_to_u128' : 87,
+    '$u256_to_i64' : 88,
+    '$u256_to_i32' : 89,
+    '$u256_to_byte' : 90,
+    '$u256_to_i32ptr' : 91,
+    '$to_internal_i32ptr' : 92,
+    '$u256_to_address' : 93,
+    '$bswap16' : 94,
+    '$bswap32' : 95,
+    '$bswap64' : 96,
+    '$address' : 97,
+    '$balance' : 98,
+    '$selfbalance' : 99,
+    '$chainid' : 100,
+    '$origin' : 101,
+    '$caller' : 102,
+    '$callvalue' : 103,
+    '$calldataload' : 104,
+    '$calldatasize' : 105,
+    '$calldatacopy' : 106,
+    '$codesize' : 107,
+    '$codecopy' : 108,
+    '$datacopy' : 109,
+    '$gasprice' : 110,
+    '$extcodesize_internal' : 111,
+    '$extcodesize' : 112,
+    '$extcodehash' : 113,
+    '$extcodecopy' : 114,
+    '$returndatasize' : 115,
+    '$returndatacopy' : 116,
+    '$blockhash' : 117,
+    '$coinbase' : 118,
+    '$timestamp' : 119,
+    '$number' : 120,
+    '$difficulty' : 121,
+    '$gaslimit' : 122,
+    '$mload' : 123,
+    '$mload_internal' : 124,
+    '$mstore' : 125,
+    '$mstore_internal' : 126,
+    '$mstore_address' : 127,
+    '$mstore8' : 128,
+    '$msize' : 129,
+    '$sload' : 130,
+    '$sstore' : 131,
+    '$gas' : 132,
+    '$log0' : 133,
+    '$log1' : 134,
+    '$log2' : 135,
+    '$log3' : 136,
+    '$log4' : 137,
+    '$create' : 138,
+    '$call' : 139,
+    '$callcode' : 140,
+    '$delegatecall' : 141,
+    '$staticcall' : 142,
+    '$create2' : 143,
+    '$selfdestruct' : 144,
+    '$return' : 145,
+    '$revert' : 146,
+    '$invalid' : 147,
+    '$stop' : 148,
+    '$keccak256' : 149,
+    '$or_bool' : 150,
+    '$or_bool_320' : 151,
+    '$or_bool_512' : 152,
+    '$save_temp_mem_32' : 153,
+    '$restore_temp_mem_32' : 154,
+    '$save_temp_mem_64' : 155,
+    '$restore_temp_mem_64' : 156,
+    '$pop' : 157,
+    '$memoryguard' : 158
+}
