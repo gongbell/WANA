@@ -10,8 +10,6 @@ import logger
 import structure
 import bin_format
 import z3
-from z3 import *
-from z3.z3util import get_vars
 from runtime import Label, Value
 from runtime import WasmFunc
 from global_variables import global_vars
@@ -98,12 +96,13 @@ def function_analysis(vm) -> None:
         for index, func in enumerate(funcs):
             expr = func.expr
             for i, instr in enumerate(expr.data):
+                
                 if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
                         in global_vars.call_delegate_addr:
+                    
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
                         global_vars.find_ethereum_delegate_call()
-
-        # check greedy in ethereum
+        global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
         detect_greedy(vm)
 
 def detect_greedy(vm) -> None:
@@ -115,17 +114,16 @@ def detect_greedy(vm) -> None:
         vm: the virtual include env and structure.
     """
     global library_function_dict
-    global library_offset
     funcs = vm.module.funcs
     # if the analyzed contract is ethereum
     if global_vars.contract_type == 'ethereum':
         # 1. Count the non payable functions, finally get the number of payable functions.
         # 2. If there are payable functions in the contract but no *ethereum.call*, greedy exists.
+        non_payable_count = 0
         offset = len(vm.module.imports)
-        library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
         main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
         exist_send_or_transfer = False
-        payable_function = 0 
+        payable_function = 0 # 合约中的payable函数数
         for index, func in enumerate(funcs):
             if exist_send_or_transfer:
                 break
@@ -140,9 +138,9 @@ def detect_greedy(vm) -> None:
                         pc_start_main_func = i
                     elif instr.code == bin_format.else_:
                         pc_end_main_func = i
-                    elif call_library_function(instr, library_offset, '$iszero'):
+                    elif call_library_function(instr, global_vars.library_offset, '$iszero'):
                         pc_start_fallback = i
-                    elif call_library_function(instr, library_offset, '$stop'):
+                    elif call_library_function(instr, global_vars.library_offset, '$stop'):
                         pc_end_fallback = i
                     if pc_start_main_func > 0 and pc_end_main_func > 0:
                         if check_function_payable(expr.data[pc_start_main_func:pc_end_main_func+1]):
@@ -157,12 +155,20 @@ def detect_greedy(vm) -> None:
                 continue
             if len(funcs) - index <= 125:
                 continue
+            is_payable = True
             for i, instr in enumerate(expr.data):
-                if call_library_function(instr, library_offset, '$call'):
+                if call_library_function(instr, global_vars.library_offset, '$call'):
                     exist_send_or_transfer = True 
-                    break
+
+                non_payable_count += 1
+                is_payable = False
+                    # break
+            if is_payable:
+                global_vars.ETH_payable_function_address_set.add(index + offset)
         if not exist_send_or_transfer and payable_function:
             global_vars.ethereum_greedy = 1
+        # if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
+        #     global_vars.cannot_send_ETH = True
 
 def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
     """Check whether the current instruction is *call* and whether its parameter is a specific library function
@@ -183,13 +189,12 @@ def check_function_payable(instrs:list) -> bool:
     Args:
         instrs: the instructions of function
     """
-    global library_offset
     exist_callvalue = False
     exist_revert = False
     for instr in instrs:
-        if call_library_function(instr, library_offset, '$callvalue'):
+        if call_library_function(instr, global_vars.library_offset, '$callvalue'):
             exist_callvalue = True
-        if call_library_function(instr, library_offset, '$revert'):
+        if call_library_function(instr, global_vars.library_offset, '$revert'):
             exist_revert = True
         if exist_callvalue and exist_revert:
             return False
@@ -199,7 +204,7 @@ def function_analysis_old(vm) -> None:
     """Analysis function, it read the opcode and arguments of function 
     and detect vulnerability of smart contract. The analysis result will 
     be store in global varibles.
-    暂时废弃，于2020/12/18
+    暂时废弃
     Args:
         vm: the virtual include env and structure.
     """
@@ -215,6 +220,7 @@ def function_analysis_old(vm) -> None:
         for index, func in enumerate(funcs):
             expr = func.expr
             for i, instr in enumerate(expr.data):
+                
                 if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
                         in global_vars.call_delegate_addr:
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
@@ -226,20 +232,27 @@ def function_analysis_old(vm) -> None:
         offset = len(vm.module.imports)
         main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
         for index, func in enumerate(funcs):
+            print(type(func))
             if index == main_index:
                 continue
             expr = func.expr
             is_payable = True
             for i, instr in enumerate(expr.data):
-                if (instr.code == bin_format.call and vm.module_instance.funcaddrs[
-                    instr.immediate_arguments] in global_vars.get_call_value_addr
-                        and _is_non_payable_function(expr, i)):
+                print("code:%x" %(instr.code))
+                
+                if (instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] in global_vars.get_call_value_addr):
+                    print(f"***************arguments:{instr.immediate_arguments} funcaddrs:{vm.module_instance.funcaddrs[instr.immediate_arguments]} is:{_is_non_payable_function(expr, i)} ")
+
+                # if (instr.code == bin_format.call and vm.module_instance.funcaddrs[
+                #     instr.immediate_arguments] in global_vars.get_call_value_addr
+                #         and _is_non_payable_function(expr, i)):
                     non_payable_count += 1
                     is_payable = False
                     break
             if is_payable:
                 global_vars.ETH_payable_function_address_set.add(index + offset)
-
+        print("non_payable_count:" + str(non_payable_count))
+        print(f'offset:{offset}  main-function_address:{global_vars.main_function_address}  vm.store.funcs:{len(vm.store.funcs)}  funcs:{len(funcs)} main_index:{main_index}')
         if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
             global_vars.cannot_send_ETH = True
 
@@ -268,83 +281,28 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
     if instr in (bin_format.i32_const, bin_format.i64_const):
         global_vars.find_ethereum_delegate_call()
 
-
-def check_ethereum_mishandled_exceptions_step_one(immediate_arguments:list) -> None:
-    """During symbolic execution, call it to detect mishandled_exceptions errors
-    If the parameter contains' call 'or' callCode ', step 2 can be executed
-    """
-    # Detect Mishandled Exceptions
-    # 1. If the current instruction is *call*, and the parameter of *call* is in 'mishandled_exceptions_call_function_addr', 
-    #    Then set 'mishandled_exceptions_flag', indicating that there may be a risk, and further testing is required
-    for argument in immediate_arguments:
-        if argument in global_vars.mishandled_exceptions_call_function_addr:
-            global_vars.mishandled_exceptions_flag = 1
-    
-
-def check_ethereum_mishandled_exceptions_step_two(stack: 'Stack') -> None:
-    """During symbolic execution, call it to detect mishandled_exceptions errors
-    """
-    # Detect Mishandled Exceptions
-    # 2. If the 'mishandled_exceptions_flag' is 1, add the top element and position of the stack to 'stack_addr'(dict) for tracking
-    #    Then potential *Mishandled Exceptions error* increase 
-    if global_vars.mishandled_exceptions_flag == 1:
-        if len(stack) not in global_vars.stack_addr:
-            global_vars.add_stack_addr(len(stack), stack.top())
-        else :  
-            global_vars.stack_addr[len(stack)] = stack.top()
-        global_vars.add_ethereum_mishandled_exceptions()
-        global_vars.mishandled_exceptions_flag = 0
-
-def check_ethereum_mishandled_exceptions_step_three_eqz(stack: 'Stack') -> None:
-    # 3. If the current instruction is  *eqz*, check if the top element of the stack is not symbolic
-    #    Then check whether the position of the top element of the stack is being tracked 
-    #    and whether the top element of the stack is the element being tracked.
-    if not utils.is_symbolic(stack.top().n):
-        if len(stack) in global_vars.stack_addr and stack.top().n == global_vars.stack_addr[len(stack)]:
-            global_vars.del_ethereum_mishandled_exceptions()
+def check_mishandled_exception(solver: 'solver', pc: int) -> None:
+    # print(f'now solver:{solver} new pc: {pc}')
+    if len(global_vars.call_symbolic_ret) > 0:
+        list_solver = solver.units()
+        r = str()
+        for ret in global_vars.call_symbolic_ret:
+            if pc - global_vars.call_symbolic_ret[ret] > 300:
+                # [TODO] this 300 need to select more 仔细
+                # print(f'{pc} - {global_vars.call_symbolic_ret[ret]} > 300， break')
+                break
+            for l in list_solver:
+                # print(f'find: {ret} {l} {type(ret)}')
+                if str(l).find(ret) != -1:
+                    # print(f'{ret} in solver')
+                    r = ret
+        if r:
+            # print(f'find {r}, mishandled--')
+            global_vars.call_symbolic_ret.pop(r)
 
 
-        
-def check_ethereum_mishandled_exceptions_step_three_eq( a, b, a_len: 'int') -> None:
-    # 3. If the current instruction is  *eq*, Check if the top of the stack(b) is 0, 
-    #    if yes, check if the top of the stack(a) after popping the stack is the tracked element
-    if not utils.is_symbolic(b) and b == 0:
-        if not utils.is_symbolic(a):
-            if a_len in global_vars.stack_addr and a == global_vars.stack_addr[a_len]:
-                global_vars.del_ethereum_mishandled_exceptions()
-                global_vars.stack_addr.pop(a_len)
 
-def check_ethereum_reentrancy_detection(path_condition:list , stack: 'Stack', immediate_arguments:list,
-                                        memory_address_symbolic_variable: dict, global_state:dict, solver) -> None: 
-    """During symbolic execution, call it to Reentrancy Detection errors
 
-        Args:
-            path_condition:  including constraints to reach this step
-            stack: the stack for current state
-            immediate_arguments: None or list of arguments of instruction
-            memory_address_symbolic_variable: It stores the variables in the constraints at this time
-            global_state: [TODO]
-    """
-    # Detect Reentrancy Detection
-    new_path_condition = []
-    for argument in immediate_arguments:
-        if argument in global_vars.reentrancy_detection_call_function_addr:  #如果call的参数含'call'或'callCode',则继续[TODO] only call or callCode?
-            for expr in path_condition:
-                if not is_expr(expr): # only handle expr？why?
-                    continue
-                vars = get_vars(expr)   # 
-                for var in vars:
-                    if var in memory_address_symbolic_variable: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
-                        pos = memory_address_symbolic_variable[var]#取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址。
-                        if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
-                            new_path_condition.append(var == global_state['Ia'][pos])#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
-            solver.push()
-            solver.add(path_condition)
-            solver.add(new_path_condition)
-            ret_val = not (solver.check() == unsat)#检测一下是不是能够满足条件
-            if ret_val:
-                global_vars.find_reentrancy_detection()
-            solver.pop()
 
 def detect_forged_transfer(store, frame, index):
     """Forge transfer notification vulnerability analysis function, and it is called

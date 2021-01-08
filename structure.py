@@ -227,7 +227,6 @@ class Instruction:
 class Expression:
     """Function bodies, initialization values for globals, and offsets of element or data segments are given as
     expressions, which are sequences of instructions terminated by an end marker.
-    函数主体，全局变量的初始化值以及元素或数据段的偏移量作为表达式给出，它们是由结束标记终止的指令序列。
 
     expr ::= instr∗ end
 
@@ -407,7 +406,6 @@ class Table:
 class Memory:
     """The mems component of a module defines a vector of linear memories (or memories for short) as described by their
     memory type.
-    模块的mems组件定义了线性存储器（或简称存储器）的向量，如其存储器类型所述
 
     mem ::= {type memtype}
 
@@ -968,7 +966,7 @@ class Module:
             elif section_id == bin_format.import_section:
                 import_section = ImportSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(import_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] ..{e}')
                 mod.imports = import_section.vec
             elif section_id == bin_format.function_section:
                 function_section = FunctionSection.from_reader(io.BytesIO(data))
@@ -1028,7 +1026,7 @@ class Module:
                 num_imported_funcs = sum(1 for _ in filter(lambda ins: ins.kind == bin_format.extern_func, mod.imports))
                 for i, e in enumerate(code_section.vec):
                     logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] func={num_imported_funcs + i} {e}')
-                    printex(e.expr.data)
+                    # printex(e.expr.data)
                     func = Function()
                     func.typeidx = function_section.vec[i]
                     func.locals = e.locals

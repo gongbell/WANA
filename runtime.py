@@ -8,13 +8,12 @@ constructed only when WebAssembly module is instantiated.
 import typing
 import bin_format
 import structure
-import random
+
 
 class Store:
     """The store represents all global state that can be manipulated by WebAssembly programs. It consists of the runtime
     representation of all instances of functions, tables, memories, and globals that have been allocated during the
     life time of the abstract machine
-
     Syntactically, the store is defined as a record listing the existing instances of each category:
     store ::= {
         funcs funcinst∗
@@ -83,10 +82,11 @@ class HostFunc(FunctionInstance):
         hostcode: the native code reference
     """
 
-    def __init__(self, functype: structure.FunctionType, hostcode: typing.Callable):
+    def __init__(self, functype: structure.FunctionType, hostcode: typing.Callable, funcname: str):
         super().__init__()
         self.functype = functype
         self.hostcode = hostcode
+        self.funcname = funcname
 
 
 class TableInstance:
@@ -131,14 +131,12 @@ class MemoryInstance:
         limits: limit instance represnt memory size
         size: current size of memory
         data: the content stored in memory
-        data_used: an indicator of whether the memory is being used
     """
 
     def __init__(self, limits: structure.Limits):
         self.limits = limits
         self.size = limits.minimum
         self.data = [0] * limits.minimum * 64 * 1024
-        self.data_used = {}
 
     def grow(self, n: int):
         if self.limits.maximum and self.size + n > self.limits.maximum:
@@ -146,26 +144,6 @@ class MemoryInstance:
         self.data.extend([0 for _ in range(n * 64 * 1024)])
         self.size += n
 
-    def get_unused_position(self, type: int):
-        '''find unused position from 'self.data', then return random from these start position
-        '''
-        type = 1
-        random_list = []
-        for i in range(self.size - type + 1):
-            flag = 0
-            for j in range(i,i + type):
-                if j in self.data_used and self.data_used[j] == 1:
-                    flag = 1
-            if flag==0:
-                random_list.append(i)
-        if random_list:
-            random_position = random.choice(random_list)
-            for i in range(random_position,random_position+type):   # 
-                self.data_used[i] = 1
-            return random_position
-        else:
-            # [TODO] better method when there is no suitable position?
-            raise Exception('there is no empty position in MemoryInstance')
 
 class GlobalInstance:
     """A global instance is the runtime representation of a global variable. It holds an individual value and a flag
@@ -323,7 +301,6 @@ class Stack:
     def add(self, e):
         self.data.append(e)
 
-    # Push all the contents of a LIST onto the stack
     def ext(self, e: typing.List):
         for i in e:
             self.add(i)

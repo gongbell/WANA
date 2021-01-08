@@ -17,14 +17,12 @@ from global_variables import global_vars
 from bug_analyzer import check_block_dependence
 from bug_analyzer import check_ethereum_delegate_call
 from bug_analyzer import check_ethereum_greedy
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_one
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_two
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eqz
-from bug_analyzer import check_ethereum_mishandled_exceptions_step_three_eq
-from bug_analyzer import check_ethereum_reentrancy_detection
 from bug_analyzer import cur_state_analysis
-
+from bug_analyzer import check_mishandled_exception
 from runtime import *
+from bug_analyzer import library_function_dict
+import pprint
+
 
 
 # The variables will be used in exec() function.
@@ -37,7 +35,6 @@ path_abort = False
 path_depth = 0
 block_number_flag = False
 gas_cost = 0
-global_state = {}
 
 
 class ModuleInstance:
@@ -237,6 +234,7 @@ def hostfunc_call(
         result: the list of result, only one elem.
     """
     f: HostFunc = store.funcs[address]
+
     valn = [stack.pop() for _ in f.functype.args][::-1]
     ctx = Ctx(store.mems)
     r = f.hostcode(ctx, *[e.n for e in valn])
@@ -247,8 +245,9 @@ def fake_hostfunc_call(
         _: ModuleInstance,
         address: int,
         store: Store,
-        stack: Stack
-):
+        stack: Stack,
+        m
+):  
     """When the lib function is not exist, the hostfunc_call will crash, so the
     fake_hostfunc_call is useful because the analysis tool could not get the lib
     function.
@@ -265,9 +264,56 @@ def fake_hostfunc_call(
     f: HostFunc = store.funcs[address]
     valn = [stack.pop() for _ in f.functype.args][::-1]
     # [TODO] A good method for return value.
+    if f.funcname:
+        logger.printt(f'call eth.hostfunc : {f.funcname} {address}')
     if len(f.functype.rets) <= 0:
+        if f.funcname == 'revert':
+            global_vars.add_flag_revert()
+            logger.printt(f'eth.revert')
+        if f.funcname == 'finish':
+            global_vars.add_flag_revert()
+            logger.printt(f'eth.finish')
+        elif f.funcname == 'callDataCopy': # or f.funcname == 'getCallValue':
+            if f.funcname == 'callDataCopy':
+                global_vars.add_flag_callDataCopy()
+                # print(f'call eth.callDataCopy flag: {global_vars.flag_callDataCopy}')
+            for j in range(32):
+                m.data[j] = randint(1, 9)
+            # print(m.data[:40])
+        elif f.funcname == 'getCallValue':
+            global_vars.add_flag_getCallValue()
+            for j in range(32):
+                m.data[j] = 0
+            # print(m.data[:40])
+            # print(f'call eth.getCallValue flag: {global_vars.flag_getCallValue}')
+
         return []
-    if f.functype.rets[0] == bin_format.i32:
+    if f.funcname == 'getCallDataSize':
+        global_vars.add_flag_getCallDataSize()
+        # print(global_vars.flag_getCallDataSize)
+        if len(solver.units()) > 1:
+            # if it is twice call eth.getCallDataSize, return ranint(4,999)
+            r = randint(68, 999)
+            # print(f'this is {global_vars.flag_getCallDataSize} time eth.getCallDataSize')
+        else:
+            r = utils.gen_symbolic_value(bin_format.i32, f'getCallDataSize_{global_vars.flag_getCallDataSize}')
+    elif f.funcname == 'getGasLeft':
+        r = utils.gen_symbolic_value(bin_format.i64, f'getGasLeft')
+    elif f.funcname == 'callDelegate':
+        r = randint(0, 9)
+        r = utils.gen_symbolic_value(bin_format.i32, f'callDelegate_{r}')
+    elif f.funcname == 'getReturnDataSize':
+        r = randint(0, 9)
+        r = utils.gen_symbolic_value(bin_format.i32, f'getReturnDataSize_{r}')
+    elif f.funcname == 'callDelegate':
+        r = randint(0, 9)
+        r = utils.gen_symbolic_value(bin_format.i32, f'callDelegate_{r}')
+    elif f.funcname == 'call':
+        r = randint(0, 9)
+        r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
+        global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
+        logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
+    elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
     elif f.functype.rets[0] == bin_format.i64:
         r = randint(0, 0)
@@ -297,6 +343,35 @@ def wasmfunc_call(
     """
     f: WasmFunc = store.funcs[address]
     code = f.code.expr.data
+    flag_callDataCopy = 0
+    flag_getCallValue = 0
+    flag_not_print = 0
+    flag_eq = 0
+    flag_lt = 0
+    func_name = list()
+    if address - global_vars.library_offset > 32:
+        func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
+        logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
+        if func_name == '$mload_internal':
+            logger.lvl = 0
+            flag_not_print = 1
+            # print('$mload_internal: stop print')
+            global_vars.add_flag_callDataCopy()
+            global_vars.add_flag_getCallValue()
+        elif func_name == '$mstore_internal':
+            logger.lvl = 0
+            flag_not_print = 1
+            # print('$mstore_internal: stop print')
+        elif func_name == '$calldataload':
+            flag_callDataCopy = 1
+        elif func_name == '$callvalue':
+            flag_getCallValue = 1
+            # print(global_vars.flag_getCallValue, flag_getCallValue)
+    else:
+        # print(f'wasmfunc call: {address}')
+        pass
+    
+    
     valn = [stack.pop() for _ in f.functype.args][::-1]
     val0 = []
     for e in f.code.locals:
@@ -309,16 +384,92 @@ def wasmfunc_call(
         else:
             val0.append(Value.from_f64(0))
     frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
+
+    if func_name == '$eq':
+        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+            flag_eq = 1
+            logger.lvl = 0
+            flag_not_print = 1
+
+    if func_name == '$lt':
+        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+            logger.printt('lt left is symbolic')
+            flag_lt = 1
+        elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+            logger.printt('lt right is symbolic')
+            flag_lt = 2
+        logger.lvl = 0
+        flag_not_print = 1
+
+    if func_name == '$add' or func_name == 'iszero':
+        logger.lvl = 0
+        flag_not_print = 1
+
     stack.add(frame)
     stack.add(Label(len(f.functype.rets), len(code)))
     # An expression is evaluated relative to a current frame pointing to its containing module instance.
     r, stack = exec_expr(store, frame, stack, f.code.expr, -1)
+    if flag_not_print == 1:
+        flag_not_print = 0
+        logger.lvl = 1
+        # print('$mload_internal or $mstore_internal: resume print')
+    if global_vars.flag_callDataCopy > 1 and flag_callDataCopy:
+        # 向栈顶压一个符号值
+        ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+        r = Value(bin_format.i64, ret)
+        global_vars.add_num_callDataCopy()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_callDataCopy()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_callDataCopy()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_callDataCopy()
+        #[TODO] num_callDataCopy清零的函数没有调用
+
+        global_vars.clear_flag_callDataCopy()
+        global_vars.clear_flag_getCallValue()
+
+        flag_callDataCopy = 0
+        r = [r]
+        # return [r]
+        # simulate eth.getCallValue
+    if global_vars.flag_getCallValue > 1 and flag_getCallValue:
+        # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
+        global_vars.clear_flag_callDataCopy()
+        global_vars.clear_flag_getCallValue()
+    if func_name == '$eq' and flag_eq == 1:
+        flag_eq = 0
+        r = Value.from_i64(0)
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
+        ret = utils.gen_symbolic_value(bin_format.i64, f'eq_{0}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        r = [r]
+
+    if func_name == '$lt' and flag_lt:
+        flag_lt = 0
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
+        r = randint(0, 99)
+        ret = utils.gen_symbolic_value(bin_format.i64, f'lt_{r}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        print('finish lt')
+        r = Value.from_i64(0)
+        r = [r]
+
     # Exit
     while not isinstance(stack.pop(), Frame):
         if stack.len() <= 0:
             raise Exception('Signature mismatch in call!')
     if any(id(elem) in global_vars.block_number_id_list for elem in valn):
         global_vars.add_random_number_id(id(r[0]))
+    print(stack)
     return r
 
 
@@ -391,7 +542,8 @@ def fake_call(
         module: ModuleInstance,
         address: int,
         store: Store,
-        stack: Stack
+        stack: Stack,
+        m
 ):
     """The function call the internal wasm function or lib function. 
     It does not execute lib function and only return a valid random 
@@ -416,9 +568,12 @@ def fake_call(
     if isinstance(f, WasmFunc):
         if global_vars.detection_mode:
             return fake_wasmfunc_call(module, address, store, stack)
-        return wasmfunc_call(module, address, store, stack)
+        r = wasmfunc_call(module, address, store, stack)
+        print(stack)
+        return r
+        # return wasmfunc_call(module, address, store, stack)
     if isinstance(f, HostFunc):
-        return fake_hostfunc_call(module, address, store, stack)
+        return fake_hostfunc_call(module, address, store, stack, m)
 
 
 def spec_br(l: int, stack: Stack) -> int:
@@ -451,10 +606,10 @@ def init_variables(init_constraints: list = ()) -> None:
     """Initialize the variables.
     """
     global path_condition, memory_address_symbolic_variable, gas_cost, solver, \
-        recur_depth, loop_depth_dict, path_abort, path_depth, block_number_flag, global_state
+        recur_depth, loop_depth_dict, path_abort, path_depth, block_number_flag
     solver = z3.Solver()
     solver.add(init_constraints)
-    path_condition = []
+    path_condition = list(init_constraints)
     memory_address_symbolic_variable = {}
     recur_depth = 0
     loop_depth_dict = defaultdict(int)
@@ -462,7 +617,6 @@ def init_variables(init_constraints: list = ()) -> None:
     path_depth = 0
     block_number_flag = False
     gas_cost = 0
-    global_state = {}
 
 
 def exec_expr(
@@ -499,9 +653,11 @@ def exec_expr(
         raise Exception('Empty init expr!')
 
     while True:
+        global_vars.cur_sum_pc += 1
         pc += 1
 
         if path_abort or pc >= len(expr.data):
+            logger.printt('function return; path_abort or pc >= len(expr.data)')
             break
 
         # Analysis current state to update some variables and detect vulnerability
@@ -511,7 +667,7 @@ def exec_expr(
 
         i = expr.data[pc]
 
-        logger.debugln(f'{str(i):<18} {stack}')
+        logger.debugln(f'{str(i) :<18} {stack} {pc} {global_vars.cur_sum_pc}')
         # log.println(f'{str(i):<18} {stack}')
 
         # accumulate the gas cost to detect expensive fallback
@@ -519,6 +675,10 @@ def exec_expr(
         global_vars.max_gas_cost = max(global_vars.max_gas_cost, gas_cost)
 
         if logger.lvl >= 2:
+            # for ii, l in enumerate(frame.locals):
+            #     if ii == 11:
+            #         print(type(l))
+            #     print(f'{ii}: {bin_format.valtype[l.valtype][0]} {l.n} {type(l)}')
             ls = [f'{i}: {bin_format.valtype[l.valtype][0]} {l.n}' for i, l in enumerate(frame.locals)]
             gs = [f'{i}: {"mut " if g.mut else ""}{bin_format.valtype[g.value.valtype][0]} {g.value.n}' for i, g in
                   enumerate(store.globals)]
@@ -529,6 +689,7 @@ def exec_expr(
         if bin_format.unreachable <= opcode <= bin_format.call_indirect:
             if opcode == bin_format.unreachable:
                 global_vars.unreachable_count += 1
+                raise Exception('unreachable')
                 break
                 # raise AssertionError('Unreachable opcode!')
             if opcode == bin_format.nop:
@@ -541,9 +702,11 @@ def exec_expr(
                 stack.add(Label(0, expr.composition[pc][0]))
                 continue
             if opcode == bin_format.if_:
-                c = stack.pop().n
+                object_c = stack.pop()
+                c = object_c.n
                 arity = int(i.immediate_arguments != bin_format.empty)
                 stack.add(Label(arity, expr.composition[pc][-1] + 1))
+                # print(f'pc:{expr.composition[pc][-1] + 1} after if stack:{stack}')
                 if utils.is_all_real(c):
                     if c != 0:
                         continue
@@ -555,26 +718,42 @@ def exec_expr(
                 else:
                     solver.push()
                     solver.add(c != 0)
+                    check_mishandled_exception(solver, global_vars.cur_sum_pc)
+                    logger.printt(solver)
                     logger.debugln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
-                        return [0], global_vars.last_stack[-1]
+                        if utils.is_symbolic(c): #and c
+                            # print(solver.check() == z3.unsat)
+                            # print(c,type(c),object_c,type(object_c))
+                            logger.printt(f'recur {recur_depth}')
+                            solver.pop()
+                            # 有时候返回数字0回栈顶不是个好的选择，如果if判断的栈顶元素是位向量，且内容为0，那么我们就返回它本身
+                            return [object_c], global_vars.last_stack[-1]
+                        return [], global_vars.last_stack[-1]
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
                             logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            # solver.pop()
+                            # print(solver)
+                            new_stack = copy.deepcopy(stack)
+                            new_stack.pop()
                         else:
                             # Execute the left branch
                             new_store = copy.deepcopy(store)
                             new_frame = copy.deepcopy(frame)
                             new_stack = copy.deepcopy(stack)
+                            # print(f'new stack:{new_stack}')
                             new_expr = copy.deepcopy(expr)
                             new_pc = pc
                             block_number_flag = id(c) in global_vars.block_number_id_list or block_number_flag  # set flag if "c" is associated with the block number
                             path_condition.append(c != 0)
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
+                            global_vars.sum_pc.append(global_vars.cur_sum_pc)
                             left_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
+                            logger.debugln(f'leave left branch{pc}')
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
@@ -589,15 +768,26 @@ def exec_expr(
                         logger.debugln('Timeout in path exploration.')
                     except Exception as e:
                         logger.debugln(f'Exception: {e}')
+                        global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        # print('sum_pc:', global_vars.cur_sum_pc)
+                        # print('行号', e.__traceback__.tb_lineno)
                     path_depth -= 1
-                    solver.pop()
 
+
+                    # print(f'right before {solver}')
+                    solver.pop()
+                    # print(f'right pop {solver}')
                     solver.push()
+                    # print(f'right push {solver}')
                     solver.add(c == 0)
+                    logger.printt(solver)
                     logger.debugln(f'right branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
                             logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            # solver.pop()
+                            # print(f'solver')
+                            new_stack = stack
                         else:
                             # Execute the right branch
                             new_store = copy.deepcopy(store)
@@ -611,15 +801,20 @@ def exec_expr(
                             path_condition.append(c == 0)
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
+                            global_vars.sum_pc.append(global_vars.cur_sum_pc)
                             right_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
+                            logger.debugln(f'leave right branch {pc}')
+                            print(new_stack)
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
                                 if path_depth <= 0:
                                     temp_stack = Stack()
                                     temp_stack.add(frame)
+                                    print(f'right path_depth <= 0')
                                     return branch_res, temp_stack
                                 else:
+                                    print('aaa')
                                     new_stack = global_vars.last_stack[-1]
                             else:
                                 branch_res += right_branch_res
@@ -629,14 +824,20 @@ def exec_expr(
                     except TimeoutError as e:
                         raise e
                     except Exception as e:
-                        logger.debugln(f'Exception: {e}')
+                        logger.debugln(f'Exception1: {e}')
+                        global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        # print('行号', e.__traceback__.tb_lineno)
+                        # print('sum_pc:', global_vars.cur_sum_pc)
+
 
                     solver.pop()
                     if path_depth <= 0:
+                        print(f'path_depth <= 0')
                         temp_stack = Stack()
                         temp_stack.add(frame)
                         return branch_res, temp_stack
                     global_vars.last_stack.pop()
+                    print(new_stack)
                     return branch_res, new_stack
 
             if opcode == bin_format.else_:
@@ -645,6 +846,8 @@ def exec_expr(
                     e = stack.data[i]
                     if isinstance(e, Label):
                         pc = e.continuation - 1
+                        # print(stack)
+                        logger.printt(pc)
                         del stack.data[i]
                         break
                 continue
@@ -689,11 +892,13 @@ def exec_expr(
                     logger.debugln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
+                        # print('return -> recur_depth > global_vars.BRANCH_DEPTH_LIMIT')
                         return branch_res, global_vars.last_stack[-1] if global_vars.last_stack != [] else None
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
                             logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = stack
                         else:
                             # Execute the left branch
                             new_store = copy.deepcopy(store)
@@ -730,6 +935,7 @@ def exec_expr(
                     try:
                         if solver.check() == z3.unsat:
                             logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = stack
                         else:
                             # Execute the right branch
                             new_store = copy.deepcopy(store)
@@ -749,6 +955,7 @@ def exec_expr(
                                 if path_depth <= 0:
                                     temp_stack = Stack()
                                     temp_stack.add(frame)
+                                    # print('return -> br_if path_depth<=0')
                                     return branch_res, temp_stack
                                 else:
                                     new_stack = global_vars.last_stack[-1]
@@ -766,8 +973,10 @@ def exec_expr(
                     if path_depth <= 0:
                         temp_stack = Stack()
                         temp_stack.add(frame)
+                        print('return -> br_if2 path_depth<=0')
                         return branch_res, temp_stack
                     global_vars.last_stack.pop()
+                    # print('return -> br_if')
                     return branch_res, new_stack
 
             # [TODO] Ready to implement symbolic execution.
@@ -788,22 +997,22 @@ def exec_expr(
                         stack.add(e)
                         break
                 stack.ext(v)
+                rint('return -> br_if2 path_depth<=0')
                 break
 
             if opcode == bin_format.call:
-                # detect Ethereum Mishandled Exceptions step 1
-                check_ethereum_mishandled_exceptions_step_one(module.funcaddrs[i.immediate_arguments])
-
-                # detect Ethereum Reentrancy Detection
-                check_ethereum_reentrancy_detection(path_condition, stack, module.funcaddrs[i.immediate_arguments],
-                                                    memory_address_symbolic_variable, global_state, solver)
-
-                r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
+                m = store.mems[module.memaddrs[0]]
+                tmp = stack
+                r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack, m)
+                print(r)
+                print(tmp)
+                print(stack)
                 stack.ext(r)
+                print(stack)
 
-                # detect Mishandled Exceptions step 2
-                # track the position where *call* returns the result on the stack
-                check_ethereum_mishandled_exceptions_step_two(stack)
+                if global_vars.flag_revert > 0:
+                    global_vars.clear_flag_revert()
+                    raise Exception('call eth.revert')
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
@@ -817,9 +1026,9 @@ def exec_expr(
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
                     check_ethereum_delegate_call(expr.data[pc - 1])
 
+
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
-
                 continue
 
             if opcode == bin_format.call_indirect:
@@ -875,8 +1084,12 @@ def exec_expr(
 
         if opcode == bin_format.set_local:
             if i.immediate_arguments >= len(frame.locals):
+                print("越界")
                 frame.locals.extend([Value.from_i32(0) for _ in range(i.immediate_arguments - len(frame.locals) + 1)])
-            frame.locals[i.immediate_arguments] = stack.pop()
+            tmp = stack.pop()
+            # print(f'settt{i.immediate_arguments} {tmp},{type(tmp)}')
+            # frame.locals[i.immediate_arguments] = stack.pop()
+            frame.locals[i.immediate_arguments] = tmp
             continue
 
         if opcode == bin_format.tee_local:
@@ -897,187 +1110,93 @@ def exec_expr(
 
         if bin_format.i32_load <= opcode <= bin_format.grow_memory:
             m = store.mems[module.memaddrs[0]]
-            if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:#弹栈取操作数，与立即数相加得到地址，从内存中读取地址，压栈
-                logger.debugln(f'm.data state {m.data}')
-                a = stack.pop().n + i.immediate_arguments[1]# Wasm采用了“立即数+操作数”的内存寻址方式，a是操作数，i.immediate_arguments[1]是立即数
-                """ if not utils.is_symbolic(a):    #如果'a'是个实数,那么从对应内存中取值即可。If 'a' is a real number, the value can be taken from the corresponding memory
-                    value = global_state["Ia"][position]
-                    stack.add(Value.from_i32()) """
-                if utils.is_symbolic(a):# if a is a symbolic, simplify a 
+            if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:
+                logger.verboseln(f'm.data state {m.data}')
+                # logger.debugln(f'm.data state {m.data}')
+                a = stack.pop().n + i.immediate_arguments[1]
+                if utils.is_symbolic(a):
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_load:
-                        if a not in memory_address_symbolic_variable:#如果对应地址(a)不在内存地址变量组中，那么给该地址赋一个随机数
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                solver.push()
-                                for var in memory_address_symbolic_variable:
-                                    solver.add(var == a)
-                                    if solver.check() == sat:
-                                        position = memory_address_symbolic_variable[var]
-                                        memory_address_symbolic_variable[a] = position
-                                        global_state['Ia'][position] = a#[TODO] 复查一遍bug，顺便扩充到其他的地方
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load')
-                        #[TODO]path_condition.append()
+                        if a not in memory_address_symbolic_variable:
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
                         stack.add(Value.from_i32(number.MemoryLoad.i32(
-                            m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))# m.data 是内存吗？
+                            m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     if opcode == bin_format.i64_load:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(8)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 8))
                         stack.add(Value.from_i64(number.MemoryLoad.i64(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 8])))
                         continue
                     if opcode == bin_format.f32_load:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for f32_load')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
                         stack.add(Value.from_f32(number.LittleEndian.f32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     if opcode == bin_format.f64_load:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(8)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for f64_load')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 8))
                         stack.add(Value.from_f64(number.LittleEndian.f64(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 8])))
                         continue
                     if opcode == bin_format.i32_load8_s:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_s')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
                         stack.add(Value.from_i32(number.MemoryLoad.i8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i32_load8_u:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load8_u')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
                         stack.add(Value.from_i32(number.MemoryLoad.u8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i32_load16_s:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_s')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
                         stack.add(Value.from_i32(number.MemoryLoad.i16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i32_load16_u:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_load16_u')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
                         stack.add(Value.from_i32(number.MemoryLoad.u16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load8_s:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_s')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
                         stack.add(Value.from_i64(number.MemoryLoad.i8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i64_load8_u:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load8_u')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 1))
                         stack.add(Value.from_i64(number.MemoryLoad.u8(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 1])))
                         continue
                     if opcode == bin_format.i64_load16_s:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_s')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
                         stack.add(Value.from_i64(number.MemoryLoad.i16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load16_u:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load16_u')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 2))
                         stack.add(Value.from_i64(number.MemoryLoad.u16(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 2])))
                         continue
                     if opcode == bin_format.i64_load32_s:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_s')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 4))
                         stack.add(Value.from_i64(number.MemoryLoad.i32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     if opcode == bin_format.i64_load32_u:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_load32_u')
+                            memory_address_symbolic_variable[a] = (randint(0, len(m.data) - 4))
                         stack.add(Value.from_i64(number.MemoryLoad.u32(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
@@ -1150,109 +1269,55 @@ def exec_expr(
                     a = z3.simplify(a)
                     if opcode == bin_format.i32_store:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_i32(v)
                         continue
                     if opcode == bin_format.i64_store:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(8)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 8)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 8] = number.MemoryStore.pack_i64(v)
                         continue
                     if opcode == bin_format.f32_store:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for f32_store')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_f32(v)
                         continue
                     if opcode == bin_format.f64_store:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(8)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for f64_store')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 8)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 8] = number.MemoryStore.pack_f64(v)
                         continue
                     if opcode == bin_format.i32_store8:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store8')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 1] = number.MemoryStore.pack_i8(v)
                         continue
                     if opcode == bin_format.i32_store16:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i32_store16')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 2)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 2] = number.MemoryStore.pack_i16(v)
                         continue
                     if opcode == bin_format.i64_store8:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(1)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store8')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 1)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 1] = number.MemoryStore.pack_i8(v)
                         continue
                     if opcode == bin_format.i64_store16:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(2)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store16')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 2)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 2] = number.MemoryStore.pack_i16(v)
                         continue
                     if opcode == bin_format.i64_store32:
                         if a not in memory_address_symbolic_variable:
-                            try:
-                                position = m.get_unused_position(4)
-                                memory_address_symbolic_variable[a] = position
-                                global_state['Ia'][position] = a
-                            except Exception as e:
-                                # [TODO] better method to handle exception
-                                logger.println(f'{e}: there is no empty position in MemoryInstance for i64_store32')
+                            memory_address_symbolic_variable[a] = randint(0, len(m.data) - 4)
                         m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
                                                                        a] + 4] = number.MemoryStore.pack_i32(v)
                         continue
@@ -1272,6 +1337,9 @@ def exec_expr(
                     continue
                 if opcode == bin_format.i64_store:
                     m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+                    # print(m.data[a:a + 8])
+                    # print(a,v)
+                    # print(number.MemoryStore.pack_i64(128))
                     continue
 
                 if opcode == bin_format.f32_store:
@@ -1328,9 +1396,6 @@ def exec_expr(
                 continue
             continue
         if opcode == bin_format.i32_eqz:
-            # check ethereum mishandled exceptions
-            check_ethereum_mishandled_exceptions_step_three_eqz(stack)
-
             object_a = stack.pop()
             a = object_a.n
             if utils.is_all_real(a):
@@ -1347,7 +1412,6 @@ def exec_expr(
         if bin_format.i32_eq <= opcode <= bin_format.i32_geu:
             object_b = stack.pop()
             b = object_b.n
-            a_len = stack.len()
             object_a = stack.pop()
             a = object_a.n
 
@@ -1356,14 +1420,13 @@ def exec_expr(
                                   or id(object_b) in global_vars.block_number_id_list)
 
             if opcode == bin_format.i32_eq:
-                # check ethereum mishandled exceptions
-                check_ethereum_mishandled_exceptions_step_three_eq(a, b, a_len)
-
                 if utils.is_all_real(a, b):
                     computed = int(a == b)
+                    # print(f'computed: {computed} {type(computed)}')
                 else:
                     computed = z3.simplify(z3.If(a == b, z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
                 object_c = Value.from_i32(computed)
+                # print(f'a type:{type(a)} b type:{type(b)} a eq b type:{type(object_c)}')
                 stack.add(object_c)
 
             elif opcode == bin_format.i32_ne:
@@ -1495,6 +1558,7 @@ def exec_expr(
                 else:
                     computed = z3.simplify(z3.If(z3.ULT(a, b), z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
                 object_c = Value.from_i32(computed)
+                # print(f'ltu:computed:{computed} {type(computed)} object_c:{object_c} {type(object_c)}')
                 stack.add(object_c)
 
             elif opcode == bin_format.i64_gts:
@@ -2275,7 +2339,7 @@ def exec_expr(
                 if utils.is_all_real(a):
                     stack.add(Value.from_i64(number.int2u32(a)))
                 else:
-                    stack.add(Value.from_i64(z3.ZeroExt(a, 32)))
+                    stack.add(Value.from_i64(z3.ZeroExt(32, a)))
                 continue
             if opcode == bin_format.i64_trunc_sf32:
                 if a > 2 ** 63 - 1 or a < -2 ** 63:
@@ -2341,4 +2405,5 @@ def exec_expr(
                 stack.add(Value.from_f64(number.i642f64(a)))
                 continue
             continue
+    # print('自然return')
     return [stack.pop() for _ in range(frame.arity)][::-1], stack

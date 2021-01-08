@@ -64,10 +64,6 @@ class Runtime:
                 if (e.module in ('env',) and e.name in ('send_inline', 'send_deferred')
                         or e.module in ('ethereum',) and e.name in ('call',)):  # current version does not include 'callCode', 'callDelegate', 'callStatic'
                     global_vars.add_send_token_function_addr(len(self.store.funcs))
-                if (e.module in ('ethereum',) and e.name in ('call','callCode')):
-                    global_vars.add_mishandled_exceptions_call_function_addr(len(self.store.funcs))
-                if (e.module in ('ethereum',) and e.name in ('call','callCode')):   # Store index information for 'call' or 'callcode' 
-                    global_vars.add_reentrancy_detection_call_function_addr(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('eosio_assert',):
                     global_vars.eosio_assert_addrs.add(len(self.store.funcs))
                 if e.module in ('env',) and e.name in ('action_data_size',):
@@ -80,8 +76,8 @@ class Runtime:
                     global_vars.add_get_call_value_addr(len(self.store.funcs))
                 if e.module in ('ethereum',) and e.name in ('revert',):
                     global_vars.add_revert_addr(len(self.store.funcs))
+                a = sym_exec.HostFunc(self.module.types[e.desc], None, e.name)
 
-                a = sym_exec.HostFunc(self.module.types[e.desc], None)
                 self.store.funcs.append(a)
                 externvals.append(sym_exec.ExternValue(e.kind, len(self.store.funcs) - 1))
                 continue
@@ -300,7 +296,7 @@ def parse_arguments():
         '--timeout',
         help='Timeout for analysis using z3 in ms.',
         type=int,
-        default=20
+        default=2000
     )
     parser.add_argument(
         '-s',
@@ -333,7 +329,7 @@ def main():
 
     # Execute all export functions of wasm
     if args.analyse_directory:
-        wasm_files = list_wasm_in_dir(args.analyse_directory[0])
+        wasm_files = list_wasm_in_dir(args.analyse_directory)
         for contract_path in wasm_files:
             try:
                 func_timeout(args.timeout, execution_and_analyze, args=(contract_path,))
@@ -372,6 +368,8 @@ def execution_and_analyze(contract_path):
     try:
         before_sym_exec(vm, name)
         detect_fake_eos(vm, name)
+        logger.lvl = 1
+        vm.exec_all_func()
         after_sym_exec(name)
     except Exception as e:
         logger.println(f'Error: {e}')
@@ -395,10 +393,12 @@ def after_sym_exec(name):
         logger.println(f'{name}: delegate call found')
     if global_vars.ethereum_greedy > 0:
         logger.println(f'{name}: greedy found')
-    if global_vars.ethereum_mishandled_exceptions > 0:
-        logger.println(f'{name}: mishandled_exceptions found')
-    if global_vars.ethereum_reentrancy_detection > 0:
-        logger.println(f'{name}: reentrancy detection found')
+    else:
+        print("greedy not found")
+    if len(global_vars.call_symbolic_ret) > 0:
+        logger.println(f'{name}: mishandled exception found')
+
+
 
 
 if __name__ == '__main__':

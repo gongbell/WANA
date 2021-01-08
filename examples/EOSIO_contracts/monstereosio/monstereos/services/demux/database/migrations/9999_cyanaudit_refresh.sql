@@ -1,1 +1,0 @@
-SELECT cyanaudit.fn_update_audit_fields('pets');

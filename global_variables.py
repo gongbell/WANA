@@ -17,9 +17,6 @@ class GlobalVariables:
         # global path conditions and path results
         self.path_conditions_and_results = {"path_conditions": [], "results": []}
 
-        # the state of the current current contract, just like global_state in oyente
-        self.global_state = {}
-
         # last stack
         self.last_stack = []
 
@@ -48,16 +45,6 @@ class GlobalVariables:
         self.ethereum_revert_addr = list()
         self.expensive_fallback = 0
         self.max_gas_cost = 0
-
-        # ethereum mishandled exceptions
-        self.ethereum_mishandled_exceptions = 0
-        self.mishandled_exceptions_call_function_addr = list() # store the addr of *$ethereum.call* or *$ethereum.callCode*
-        self.stack_addr = dict() # key = Position in the stack, value = Value in stack
-        self.mishandled_exceptions_flag = 0
-
-        # ethereum reentrancy detection
-        self.ethereum_reentrancy_detection = 0
-        self.reentrancy_detection_call_function_addr = list() # store the addr of *$ethereum.call* or *$ethereum.callCode*,也许还有其他的？
 
         # mode flag
         self.location_mode = False
@@ -89,10 +76,34 @@ class GlobalVariables:
 
         # loop depth limit
         self.LOOP_DEPTH_LIMIT = 10
-        self.BRANCH_DEPTH_LIMIT = 100000
+        self.BRANCH_DEPTH_LIMIT = 20
 
         # unreachable count
         self.unreachable_count = 0
+
+        # offset of library func in wasm and library 
+        self.library_offset = 0
+
+        # flag to simulate eth.callDataCopy
+        self.flag_callDataCopy = 0
+        self.num_callDataCopy = 0
+
+        # flag to simulate eth.getCallValue
+        self.flag_getCallValue = 0
+
+        # flag to simulate eth.revert
+        self.flag_revert = 0
+
+        # flag to simulate eth.getCallDataSize, 0 -> symbolic, 1 -> real(>4)
+        self.flag_getCallDataSize = 0
+
+        # flag to detect mishandled exception
+        self.flag_call_mishandled_exception = 0
+        self.call_symbolic_ret = dict()
+
+        # sum of pc 
+        self.sum_pc = list()
+        self.cur_sum_pc = 0
 
     def re_init(self) -> None:
         self.__init__(self.contract_type)
@@ -101,13 +112,7 @@ class GlobalVariables:
         self.block_dependency_count = 0
         self.fake_eos_transfer_count = 0
         self.ethereum_delegate_call = 0
-        self.ethereum_mishandled_exceptions = 0
         self.forged_transfer_notification_count = 0
-        self.mishandled_exceptions_flag = 0
-        
-        # [TODO] 修改mishandled_exceptions_call_function_addr置空？
-        # [TODO] 修改reentrancy_detection_call_function_addr置空？
-        # [TODO] 修改stack_addr置空？
 
         self.vm = None
         self.found_to_check = False
@@ -189,22 +194,34 @@ class GlobalVariables:
     def find_ethereum_greedy(self) -> None:
         self.ethereum_greedy = 1
 
-    def add_ethereum_mishandled_exceptions(self) -> None:
-        self.ethereum_mishandled_exceptions += 1
+    def add_flag_callDataCopy(self) -> None:
+        self.flag_callDataCopy += 1
 
-    def del_ethereum_mishandled_exceptions(self) -> None:
-        self.ethereum_mishandled_exceptions -= 1
+    def clear_flag_callDataCopy(self) -> None:
+        self.flag_callDataCopy = 0
 
-    def add_mishandled_exceptions_call_function_addr(self, address: int) -> None:
-        self.mishandled_exceptions_call_function_addr.append(address)
+    def add_num_callDataCopy(self) -> None:
+        self.num_callDataCopy += 1
 
-    def add_stack_addr(self, address: int, value: int) -> None:
-        self.stack_addr[address] = value
+    def clear_num_callDataCopy(self) -> None:
+        self.num_callDataCopy = 0
 
-    def add_reentrancy_detection_call_function_addr(self, address: int) -> None:
-        self.reentrancy_detection_call_function_addr.append(address)
+    def add_flag_getCallValue(self) -> None:
+        self.flag_getCallValue += 1
 
-    def find_reentrancy_detection(self) -> None:
-        self.ethereum_reentrancy_detection +=1
+    def clear_flag_getCallValue(self) -> None:
+        self.flag_getCallValue = 0
+
+    def add_flag_revert(self) -> None:
+        self.flag_revert = 1
+
+    def clear_flag_revert(self) -> None:
+        self.flag_revert = 0
+
+    def add_flag_getCallDataSize(self) -> None:
+        self.flag_getCallDataSize += 1
+
+    def clear_flag_getCallDataSize(self) -> None:
+        self.flag_getCallDataSize = 0
 
 global_vars = GlobalVariables()

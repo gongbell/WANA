@@ -35,3 +35,7 @@ def fatalln(*args):
     println(*args)
     println('exit status 1')
     sys.exit(1)
+
+def printt(*args):
+    if lvl >= 1:
+        print(*args)
