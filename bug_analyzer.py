@@ -292,9 +292,9 @@ def check_mishandled_exception(solver: 'solver', pc: int) -> None:
                 # print(f'{pc} - {global_vars.call_symbolic_ret[ret]} > 300， break')
                 break
             for l in list_solver:
-                # print(f'find: {ret} {l} {type(ret)}')
+                print(f'find: {ret} {l} {type(ret)}')
                 if str(l).find(ret) != -1:
-                    # print(f'{ret} in solver')
+                    print(f'{ret} in solver')
                     r = ret
         if r:
             # print(f'find {r}, mishandled--')

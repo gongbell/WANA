@@ -286,6 +286,9 @@ def fake_hostfunc_call(
                 m.data[j] = 0
             # print(m.data[:40])
             # print(f'call eth.getCallValue flag: {global_vars.flag_getCallValue}')
+        elif f.funcname == 'callDataCopy':
+            global_vars.add_flag_getCaller()
+
 
         return []
     if f.funcname == 'getCallDataSize':
@@ -345,6 +348,7 @@ def wasmfunc_call(
     code = f.code.expr.data
     flag_callDataCopy = 0
     flag_getCallValue = 0
+    flag_getCaller = 0
     flag_not_print = 0
     flag_eq = 0
     flag_lt = 0
@@ -358,6 +362,8 @@ def wasmfunc_call(
             # print('$mload_internal: stop print')
             global_vars.add_flag_callDataCopy()
             global_vars.add_flag_getCallValue()
+            global_vars.add_flag_getCaller()
+
         elif func_name == '$mstore_internal':
             logger.lvl = 0
             flag_not_print = 1
@@ -367,6 +373,10 @@ def wasmfunc_call(
         elif func_name == '$callvalue':
             flag_getCallValue = 1
             # print(global_vars.flag_getCallValue, flag_getCallValue)
+        elif func_name == '$caller':
+            flag_getCaller = 1.
+            print(f'flag {flag_getCaller}')
+
     else:
         # print(f'wasmfunc call: {address}')
         pass
@@ -408,7 +418,7 @@ def wasmfunc_call(
     stack.add(frame)
     stack.add(Label(len(f.functype.rets), len(code)))
     # An expression is evaluated relative to a current frame pointing to its containing module instance.
-    r, stack = exec_expr(store, frame, stack, f.code.expr, -1)
+    r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
     if flag_not_print == 1:
         flag_not_print = 0
         logger.lvl = 1
@@ -434,6 +444,8 @@ def wasmfunc_call(
 
         global_vars.clear_flag_callDataCopy()
         global_vars.clear_flag_getCallValue()
+        global_vars.clear_flag_getCaller()
+
 
         flag_callDataCopy = 0
         r = [r]
@@ -443,6 +455,35 @@ def wasmfunc_call(
         # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
         global_vars.clear_flag_callDataCopy()
         global_vars.clear_flag_getCallValue()
+        global_vars.clear_flag_getCaller()
+
+    if global_vars.flag_getCaller > 1 and flag_getCaller:
+        # 向栈顶压一个符号值
+        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+        r = Value(bin_format.i64, ret)
+        global_vars.add_num_getCaller()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_getCaller()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_getCaller()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_getCaller()
+        #[TODO] num_callDataCopy清零的函数没有调用
+
+        global_vars.clear_flag_callDataCopy()
+        global_vars.clear_flag_getCallValue()
+        global_vars.clear_flag_getCaller()
+
+        flag_getCaller = 0
+        r = [r]
+        # return [r]
+        # simulate eth.getCallValue
     if func_name == '$eq' and flag_eq == 1:
         flag_eq = 0
         r = Value.from_i64(0)
@@ -464,12 +505,18 @@ def wasmfunc_call(
         r = [r]
 
     # Exit
-    while not isinstance(stack.pop(), Frame):
-        if stack.len() <= 0:
+    while not isinstance(new_stack.pop(), Frame):
+        if new_stack.len() <= 0:
             raise Exception('Signature mismatch in call!')
     if any(id(elem) in global_vars.block_number_id_list for elem in valn):
         global_vars.add_random_number_id(id(r[0]))
-    print(stack)
+    # print(f'old stack  {stack}')
+    # print(f'new——stack {new_stack}')
+    if str(stack) != str(new_stack):
+        # print('change right')
+        pass
+    stack.data[:] = new_stack.data
+    # print(f'now stack {stack}')
     return r
 
 
@@ -569,7 +616,7 @@ def fake_call(
         if global_vars.detection_mode:
             return fake_wasmfunc_call(module, address, store, stack)
         r = wasmfunc_call(module, address, store, stack)
-        print(stack)
+        # print(stack)
         return r
         # return wasmfunc_call(module, address, store, stack)
     if isinstance(f, HostFunc):
@@ -1002,13 +1049,13 @@ def exec_expr(
 
             if opcode == bin_format.call:
                 m = store.mems[module.memaddrs[0]]
-                tmp = stack
+                # tmp = stack
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack, m)
-                print(r)
-                print(tmp)
-                print(stack)
+                # print(r)
+                # print(tmp)
+                # print(stack)
                 stack.ext(r)
-                print(stack)
+                # print(stack)
 
                 if global_vars.flag_revert > 0:
                     global_vars.clear_flag_revert()

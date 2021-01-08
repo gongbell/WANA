@@ -76,7 +76,7 @@ class GlobalVariables:
 
         # loop depth limit
         self.LOOP_DEPTH_LIMIT = 10
-        self.BRANCH_DEPTH_LIMIT = 20
+        self.BRANCH_DEPTH_LIMIT = 50
 
         # unreachable count
         self.unreachable_count = 0
@@ -96,6 +96,10 @@ class GlobalVariables:
 
         # flag to simulate eth.getCallDataSize, 0 -> symbolic, 1 -> real(>4)
         self.flag_getCallDataSize = 0
+
+        # flag to simulate eth.getCaller
+        self.flag_getCaller = 0
+        self.num_getCaller = 0
 
         # flag to detect mishandled exception
         self.flag_call_mishandled_exception = 0
@@ -217,6 +221,18 @@ class GlobalVariables:
 
     def clear_flag_revert(self) -> None:
         self.flag_revert = 0
+
+    def add_flag_getCaller(self) -> None:
+        self.flag_getCaller += 1
+
+    def clear_flag_getCaller(self) -> None:
+        self.flag_getCaller = 0
+
+    def add_num_getCaller(self) -> None:
+        self.num_getCaller += 1
+
+    def clear_num_getCaller(self) -> None:
+        self.num_getCaller = 0
 
     def add_flag_getCallDataSize(self) -> None:
         self.flag_getCallDataSize += 1

@@ -397,6 +397,8 @@ def after_sym_exec(name):
         print("greedy not found")
     if len(global_vars.call_symbolic_ret) > 0:
         logger.println(f'{name}: mishandled exception found')
+    else:
+        print(f'{global_vars.call_symbolic_ret}')
 
 
 
