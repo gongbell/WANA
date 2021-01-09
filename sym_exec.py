@@ -353,6 +353,8 @@ def wasmfunc_call(
     flag_not_print = 0
     flag_eq = 0
     flag_lt = 0
+    flag_keccak256 = 0
+    flag_skip = 0
     func_name = list()
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
@@ -379,6 +381,9 @@ def wasmfunc_call(
         elif func_name == '$caller':
             flag_getCaller = 1
             print(f'flag {flag_getCaller}')
+        elif func_name == '$keccak256':
+            flag_keccak256 = 1
+            flag_skip = 1
 
     else:
         global_vars.list_func.append(f' {address} -> ')
@@ -397,32 +402,35 @@ def wasmfunc_call(
             val0.append(Value.from_f32(0))
         else:
             val0.append(Value.from_f64(0))
-    frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
+    
+    if flag_skip != 1:
+        frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
 
-    if func_name == '$eq':
-        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            flag_eq = 1
+        if func_name == '$eq':
+            if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+                flag_eq = 1
+                logger.lvl = 0
+                flag_not_print = 1
+
+        if func_name == '$lt':
+            if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+                logger.printt('lt left is symbolic')
+                flag_lt = 1
+            elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+                logger.printt('lt right is symbolic')
+                flag_lt = 2
             logger.lvl = 0
             flag_not_print = 1
 
-    if func_name == '$lt':
-        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            logger.printt('lt left is symbolic')
-            flag_lt = 1
-        elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            logger.printt('lt right is symbolic')
-            flag_lt = 2
-        logger.lvl = 0
-        flag_not_print = 1
+        if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr':
+            logger.lvl = 0
+            flag_not_print = 1
 
-    if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr':
-        logger.lvl = 0
-        flag_not_print = 1
-
-    stack.add(frame)
-    stack.add(Label(len(f.functype.rets), len(code)))
-    # An expression is evaluated relative to a current frame pointing to its containing module instance.
-    r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
+        stack.add(frame)
+        stack.add(Label(len(f.functype.rets), len(code)))
+        # An expression is evaluated relative to a current frame pointing to its containing module instance.
+        r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
+    flag_skip = 0
     if flag_not_print == 1:
         flag_not_print = 0
         logger.lvl = global_vars.lvl
@@ -506,6 +514,27 @@ def wasmfunc_call(
         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
         print('finish lt')
         r = Value.from_i64(0)
+        r = [r]
+
+    if flag_keccak256 == 1:
+        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
+        r = Value(bin_format.i64, ret)
+        global_vars.add_num_keccak256()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_keccak256()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_keccak256()
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_keccak256()
+        #[TODO] num_keccak256清零的函数没有调用
+
+        flag_keccak256 = 0
         r = [r]
 
     # Exit

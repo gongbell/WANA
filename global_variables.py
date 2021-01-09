@@ -101,6 +101,10 @@ class GlobalVariables:
         self.flag_getCaller = 0
         self.num_getCaller = 0
 
+        # flag to simulate keccak256
+        self.flag_keccak256 = 0
+        self.num_keccak256 = 0
+
         # flag to detect mishandled exception
         self.flag_call_mishandled_exception = 0
         self.call_symbolic_ret = dict()
@@ -214,6 +218,18 @@ class GlobalVariables:
 
     def clear_num_callDataCopy(self) -> None:
         self.num_callDataCopy = 0
+
+    def add_flag_keccak256(self) -> None:
+        self.flag_keccak256 += 1
+
+    def clear_flag_keccak256(self) -> None:
+        self.flag_keccak256 = 0
+
+    def add_num_keccak256(self) -> None:
+        self.num_keccak256 += 1
+
+    def clear_num_keccak256(self) -> None:
+        self.num_keccak256 = 0
 
     def add_flag_getCallValue(self) -> None:
         self.flag_getCallValue += 1
