@@ -109,6 +109,11 @@ class GlobalVariables:
         self.sum_pc = list()
         self.cur_sum_pc = 0
 
+        self.lvl = 0
+
+        self.list_func = list()
+        self.len_list_func = 0
+
     def re_init(self) -> None:
         self.__init__(self.contract_type)
 

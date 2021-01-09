@@ -369,6 +369,7 @@ def execution_and_analyze(contract_path):
         before_sym_exec(vm, name)
         detect_fake_eos(vm, name)
         logger.lvl = 1
+        global_vars.lvl = logger.lvl
         vm.exec_all_func()
         after_sym_exec(name)
     except Exception as e:

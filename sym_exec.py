@@ -265,6 +265,7 @@ def fake_hostfunc_call(
     valn = [stack.pop() for _ in f.functype.args][::-1]
     # [TODO] A good method for return value.
     if f.funcname:
+        print(f'call eth.hostfunc : {f.funcname} {address}')
         logger.printt(f'call eth.hostfunc : {f.funcname} {address}')
     if len(f.functype.rets) <= 0:
         if f.funcname == 'revert':
@@ -286,7 +287,7 @@ def fake_hostfunc_call(
                 m.data[j] = 0
             # print(m.data[:40])
             # print(f'call eth.getCallValue flag: {global_vars.flag_getCallValue}')
-        elif f.funcname == 'callDataCopy':
+        elif f.funcname == 'getCaller':
             global_vars.add_flag_getCaller()
 
 
@@ -355,7 +356,9 @@ def wasmfunc_call(
     func_name = list()
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
-        logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
+        global_vars.list_func.append(f'{func_name} {address} -> ')
+        logger.printt(f'wasmfunc call: {global_vars.list_func} ')
+        # logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
         if func_name == '$mload_internal':
             logger.lvl = 0
             flag_not_print = 1
@@ -374,10 +377,11 @@ def wasmfunc_call(
             flag_getCallValue = 1
             # print(global_vars.flag_getCallValue, flag_getCallValue)
         elif func_name == '$caller':
-            flag_getCaller = 1.
+            flag_getCaller = 1
             print(f'flag {flag_getCaller}')
 
     else:
+        global_vars.list_func.append(f' {address} -> ')
         # print(f'wasmfunc call: {address}')
         pass
     
@@ -411,7 +415,7 @@ def wasmfunc_call(
         logger.lvl = 0
         flag_not_print = 1
 
-    if func_name == '$add' or func_name == 'iszero':
+    if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr':
         logger.lvl = 0
         flag_not_print = 1
 
@@ -421,7 +425,7 @@ def wasmfunc_call(
     r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
     if flag_not_print == 1:
         flag_not_print = 0
-        logger.lvl = 1
+        logger.lvl = global_vars.lvl
         # print('$mload_internal or $mstore_internal: resume print')
     if global_vars.flag_callDataCopy > 1 and flag_callDataCopy:
         # 向栈顶压一个符号值
@@ -704,7 +708,10 @@ def exec_expr(
         pc += 1
 
         if path_abort or pc >= len(expr.data):
-            logger.printt('function return; path_abort or pc >= len(expr.data)')
+            if len(global_vars.list_func) > global_vars.len_list_func:
+                tmp = global_vars.list_func.pop()
+                logger.printt(f'return func {tmp}')
+                logger.printt(f'{global_vars.list_func}')
             break
 
         # Analysis current state to update some variables and detect vulnerability
@@ -769,6 +776,8 @@ def exec_expr(
                     logger.printt(solver)
                     logger.debugln(f'left branch ({pc}: {i})')
                     path_depth += 1
+                    len_list_func = len(global_vars.list_func)
+                    global_vars.len_list_func = len(global_vars.list_func)
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
                         if utils.is_symbolic(c): #and c
                             # print(solver.check() == z3.unsat)
@@ -816,6 +825,8 @@ def exec_expr(
                     except Exception as e:
                         logger.debugln(f'Exception: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        global_vars.list_func = global_vars.list_func[:len_list_func]
+
                         # print('sum_pc:', global_vars.cur_sum_pc)
                         # print('行号', e.__traceback__.tb_lineno)
                     path_depth -= 1
@@ -873,6 +884,7 @@ def exec_expr(
                     except Exception as e:
                         logger.debugln(f'Exception1: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        global_vars.list_func = global_vars.list_func[:len_list_func]
                         # print('行号', e.__traceback__.tb_lineno)
                         # print('sum_pc:', global_vars.cur_sum_pc)
 
