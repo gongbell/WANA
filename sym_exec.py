@@ -282,7 +282,7 @@ def fake_hostfunc_call(
                 m.data[j] = randint(1, 9)
             # print(m.data[:40])
         elif f.funcname == 'getCallValue':
-            global_vars.add_flag_getCallValue()
+            global_vars.add_flag_getCallValue()                
             for j in range(32):
                 m.data[j] = 0
             # print(m.data[:40])
@@ -376,6 +376,9 @@ def wasmfunc_call(
         elif func_name == '$calldataload':
             flag_callDataCopy = 1
         elif func_name == '$callvalue':
+            if len(global_vars.list_func) > 2:
+                global_vars.flag_getCallValue_in_function = True
+                print(f'{len(global_vars.list_func)} true')
             flag_getCallValue = 1
             # print(global_vars.flag_getCallValue, flag_getCallValue)
         elif func_name == '$caller':
@@ -387,6 +390,7 @@ def wasmfunc_call(
 
     else:
         global_vars.list_func.append(f' {address} -> ')
+        logger.printt(f'wasmfunc call: {global_vars.list_func} ')
         # print(f'wasmfunc call: {address}')
         pass
     
@@ -430,6 +434,12 @@ def wasmfunc_call(
         stack.add(Label(len(f.functype.rets), len(code)))
         # An expression is evaluated relative to a current frame pointing to its containing module instance.
         r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
+    else:
+        new_stack = stack
+    tmp = global_vars.list_func.pop()
+    logger.printt(f'return func {tmp}')
+    logger.printt(f'{global_vars.list_func}')
+    
     flag_skip = 0
     if flag_not_print == 1:
         flag_not_print = 0
@@ -465,9 +475,33 @@ def wasmfunc_call(
         # simulate eth.getCallValue
     if global_vars.flag_getCallValue > 1 and flag_getCallValue:
         # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
+        print(global_vars.flag_getCallValue_in_function)
+        if global_vars.flag_getCallValue_in_function:
+            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+            r = Value(bin_format.i64, ret)
+            global_vars.add_num_getCallValue()
+
+            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+            store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+            global_vars.add_num_getCallValue()
+
+            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+            store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+            global_vars.add_num_getCallValue()
+
+            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+            store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+            global_vars.add_num_getCallValue()
+            global_vars.change_flag_getCallValue_in_function()
+            r = [r]
+
+        print(global_vars.flag_getCallValue_in_function)
+
         global_vars.clear_flag_callDataCopy()
         global_vars.clear_flag_getCallValue()
         global_vars.clear_flag_getCaller()
+
+        flag_getCallValue = 0
 
     if global_vars.flag_getCaller > 1 and flag_getCaller:
         # 向栈顶压一个符号值
@@ -655,6 +689,9 @@ def fake_call(
     if isinstance(f, HostFunc):
         return fake_hostfunc_call(module, address, store, stack, m)
 
+# def set_stack_and_global()
+    # [TODO] 
+
 
 def spec_br(l: int, stack: Stack) -> int:
     """Process branch instruction.
@@ -737,10 +774,10 @@ def exec_expr(
         pc += 1
 
         if path_abort or pc >= len(expr.data):
-            if len(global_vars.list_func) > global_vars.len_list_func:
-                tmp = global_vars.list_func.pop()
-                logger.printt(f'return func {tmp}')
-                logger.printt(f'{global_vars.list_func}')
+            # if len(global_vars.list_func) > global_vars.len_list_func:
+            #     tmp = global_vars.list_func.pop()
+            #     logger.printt(f'return func {tmp}')
+            #     logger.printt(f'{global_vars.list_func}')
             break
 
         # Analysis current state to update some variables and detect vulnerability

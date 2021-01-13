@@ -90,6 +90,8 @@ class GlobalVariables:
 
         # flag to simulate eth.getCallValue
         self.flag_getCallValue = 0
+        self.flag_getCallValue_in_function = False
+        self.num_getCallValue = 0
 
         # flag to simulate eth.revert
         self.flag_revert = 0
@@ -236,6 +238,15 @@ class GlobalVariables:
 
     def clear_flag_getCallValue(self) -> None:
         self.flag_getCallValue = 0
+
+    def add_num_getCallValue(self) -> None:
+        self.num_getCallValue += 1
+
+    def clear_num_getCallValue(self) -> None:
+        self.num_getCallValue = 0
+
+    def change_flag_getCallValue_in_function(self) -> None:
+        self.flag_getCallValue_in_function = not self.flag_getCallValue_in_function
 
     def add_flag_revert(self) -> None:
         self.flag_revert = 1
