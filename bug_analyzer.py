@@ -104,7 +104,7 @@ def function_analysis(vm) -> None:
                         global_vars.find_ethereum_delegate_call()
         global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
         detect_greedy(vm)
-        check_block_dependence(vm)
+        check_block_dependence_static(vm)
 
 def detect_greedy(vm) -> None:
     """Analysis function, it read the opcode and arguments of function 
@@ -171,7 +171,7 @@ def detect_greedy(vm) -> None:
         # if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
         #     global_vars.cannot_send_ETH = True
 
-def check_block_dependence(vm) -> None:
+def check_block_dependence_static(vm) -> None:
     """[TODO]
     """
     global library_function_dict
@@ -196,7 +196,32 @@ def check_block_dependence(vm) -> None:
                     exist_timestamp_or_number = True 
                     break
         if exist_timestamp_or_number:
+            # global_vars.block_dependency_count += 1
+            pass
+
+def find_symbolic_in_solver(solver:'solver'):
+    list_solver = solver.units()
+    r = str()
+    for ret in global_vars.dict_block_solver:
+        for l in list_solver:
+            print(f'find: {ret} {l} {type(ret)}')
+            if str(l).find(str(ret)) != -1:
+                print(f'{ret} in solver')
+                r = ret
+    if r:
+        global_vars.add_dict_block_solver(r, 1)
+
+def check_block_dependence_dynamic(solver:'solver'):
+    for ret in global_vars.dict_block_solver:
+        if global_vars.dict_block_solver[ret][1] != 1:
+            continue
+        if str(global_vars.dict_block_solver[ret][0]) == str(solver):
+            print(f'find1 {ret} {str(solver)}')
             global_vars.block_dependency_count += 1
+            global_vars.dict_block_solver.pop(ret)
+            break
+
+
 
 def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
     """Check whether the current instruction is *call* and whether its parameter is a specific library function

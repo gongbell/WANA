@@ -7,7 +7,7 @@ For simplicity, it only contain the unique object global_variables_instance of c
 GlobalVariables.
 """
 import utils
-
+import z3
 
 class GlobalVariables:
     def __init__(self, contract_type: str = 'eos', lvl: int = 0, simple: bool = False) -> None:
@@ -316,8 +316,12 @@ class GlobalVariables:
         self.flag_num_wasm += 1
         return self.flag_num_wasm - 1
 
-    def add_dict_block_solver(self, key, value)
-        if value
-        self.dict_block_solver[] = dict()
+    def add_dict_block_solver(self, key, value):
+        if isinstance(value, z3.Solver):
+            self.dict_block_solver[key] = list()
+            self.dict_block_solver[key].append(value)
+        elif isinstance(value, int):
+            self.dict_block_solver[key].append(value)
+
 
 global_vars = GlobalVariables()

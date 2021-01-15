@@ -21,6 +21,8 @@ from bug_analyzer import cur_state_analysis
 from bug_analyzer import check_mishandled_exception
 from runtime import *
 from bug_analyzer import library_function_dict
+from bug_analyzer import find_symbolic_in_solver
+from bug_analyzer import check_block_dependence_dynamic
 import pprint
 
 
@@ -315,15 +317,18 @@ def fake_hostfunc_call(
         r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
         logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
+        check_block_dependence_dynamic(solver)
         print(solver)
 
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockTimestamp_{r}')
+        global_vars.add_dict_block_solver(str(r), solver)
         print(solver)
     elif f.funcname == 'getBlockNumber':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
+        global_vars.add_dict_block_solver(str(r), solver)
         print(solver)
         
     elif f.functype.rets[0] == bin_format.i32:
@@ -946,6 +951,7 @@ def exec_expr(
                 else:
                     solver.push()
                     solver.add(c != 0)
+                    find_symbolic_in_solver(solver)
                     check_mishandled_exception(solver, global_vars.cur_sum_pc)
                     logger.printt(solver)
                     logger.debugln(f'left branch ({pc}: {i})')
@@ -1012,6 +1018,7 @@ def exec_expr(
                     solver.push()
                     # print(f'right push {solver}')
                     solver.add(c == 0)
+                    find_symbolic_in_solver(solver)
                     logger.printt(solver)
                     logger.debugln(f'right branch ({pc}: {i})')
                     try:
@@ -1122,6 +1129,7 @@ def exec_expr(
                 else:
                     solver.push()
                     solver.add(c == 0)
+                    find_symbolic_in_solver(solver)
                     logger.debugln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
@@ -1164,6 +1172,7 @@ def exec_expr(
 
                     solver.push()
                     solver.add(c != 0)
+                    find_symbolic_in_solver(solver)
                     logger.debugln(f'left branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
@@ -2010,6 +2019,7 @@ def exec_expr(
                 elif not utils.is_all_real(b):
                     solver.push()
                     solver.add(z3.Not(b == 0))
+                    find_symbolic_in_solver(solver)
                     if utils.check_sat(solver) == z3.unsat:
                         logger.println('Integer divide by zero!')
                         b = 1
@@ -2047,6 +2057,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 32), utils.to_symbolic(b, 32)
                     solver.push()
                     solver.add((a / b) < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
                     computed = z3.simplify(sign * (a / b))
@@ -2070,6 +2081,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 32), utils.to_symbolic(b, 32)
                     solver.push()
                     solver.add(a < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     solver.pop()
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
@@ -2216,6 +2228,7 @@ def exec_expr(
                 elif not utils.is_all_real(b):
                     solver.push()
                     solver.add(z3.Not(b == 0))
+                    find_symbolic_in_solver(solver)
                     if utils.check_sat(solver) == z3.unsat:
                         logger.println('Integer divide by zero!')
                         b = 1
@@ -2253,6 +2266,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 64), utils.to_symbolic(b, 64)
                     solver.push()
                     solver.add((a / b) < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
                     computed = z3.simplify(sign * (a / b))
@@ -2276,6 +2290,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 64), utils.to_symbolic(b, 64)
                     solver.push()
                     solver.add(a < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     solver.pop()
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
