@@ -10,7 +10,7 @@ import utils
 
 
 class GlobalVariables:
-    def __init__(self, contract_type: str = 'eos') -> None:
+    def __init__(self, contract_type: str = 'eos', lvl: int = 0, simple: bool = False) -> None:
         # program counter
         self.pc = 0
 
@@ -81,6 +81,9 @@ class GlobalVariables:
         # unreachable count
         self.unreachable_count = 0
 
+        # jugde if simple execute
+        self.is_simple = simple
+
         # offset of library func in wasm and library 
         self.library_offset = 0
 
@@ -107,21 +110,33 @@ class GlobalVariables:
         self.flag_keccak256 = 0
         self.num_keccak256 = 0
 
+        # flag to simulate eth.getExternalBalance
+        self.flag_getExternalBalance = 0
+        self.num_getExternalBalance = 0
+
+
         # flag to detect mishandled exception
         self.flag_call_mishandled_exception = 0
         self.call_symbolic_ret = dict()
+
+        # simulate $div
+        self.num_div = 0
 
         # sum of pc 
         self.sum_pc = list()
         self.cur_sum_pc = 0
 
-        self.lvl = 0
+        self.lvl = lvl
 
         self.list_func = list()
         self.len_list_func = 0
 
+        # to manage symbolic_num
+        self.flag_num_host = 0
+        self.flag_num_wasm = 0
+
     def re_init(self) -> None:
-        self.__init__(self.contract_type)
+        self.__init__(self.contract_type, self.lvl, self.is_simple)
 
     def clear_count(self) -> None:
         self.block_dependency_count = 0
@@ -271,5 +286,32 @@ class GlobalVariables:
 
     def clear_flag_getCallDataSize(self) -> None:
         self.flag_getCallDataSize = 0
+    
+    def add_num_div(self) -> None:
+        self.num_div += 1
+
+    def clear_num_div(self) -> None:
+        self.num_div = 0
+
+    def add_flag_getExternalBalance(self) -> None:
+        self.flag_getExternalBalance += 1
+
+    def clear_flag_getExternalBalance(self) -> None:
+        self.flag_getExternalBalance = 0
+
+    def add_num_getExternalBalance(self) -> None:
+        self.num_getExternalBalance += 1
+
+    def clear_num_getExternalBalance(self) -> None:
+        self.num_getExternalBalance = 0
+
+    def add_flag_num_host(self) -> int:
+        self.flag_num_host += 1
+        return self.flag_num_host - 1
+
+    def add_flag_num_wasm(self) -> int:
+        self.flag_num_wasm += 1
+        return self.flag_num_wasm - 1
+
 
 global_vars = GlobalVariables()

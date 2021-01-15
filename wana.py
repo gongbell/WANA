@@ -304,6 +304,18 @@ def parse_arguments():
         action='store_true',
         help='Analyze the solidity smart contract'
     )
+    parser.add_argument(
+        '-l',
+        '--lvl',
+        type = int,
+        default=0,
+        help='logger.lvl'
+    )
+    parser.add_argument(
+        '--simple',
+        action='store_true',
+        help='simple execute wasm'
+    )
     return parser.parse_args()
 
 
@@ -316,6 +328,12 @@ def main():
     # Compile
     if args.sol:
         global_vars.contract_type = 'ethereum'
+
+    if args.lvl:
+        logger.lvl = global_vars.lvl = args.lvl
+
+    if args.simple:
+        global_vars.is_simple = args.simple
 
     # Execute a export functions of wasm
     if args.execute:
@@ -368,8 +386,6 @@ def execution_and_analyze(contract_path):
     try:
         before_sym_exec(vm, name)
         detect_fake_eos(vm, name)
-        logger.lvl = 1
-        global_vars.lvl = logger.lvl
         vm.exec_all_func()
         after_sym_exec(name)
     except Exception as e:
