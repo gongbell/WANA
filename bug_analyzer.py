@@ -104,6 +104,7 @@ def function_analysis(vm) -> None:
                         global_vars.find_ethereum_delegate_call()
         global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
         detect_greedy(vm)
+        check_block_dependence(vm)
 
 def detect_greedy(vm) -> None:
     """Analysis function, it read the opcode and arguments of function 
@@ -169,6 +170,33 @@ def detect_greedy(vm) -> None:
             global_vars.ethereum_greedy = 1
         # if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
         #     global_vars.cannot_send_ETH = True
+
+def check_block_dependence(vm) -> None:
+    """[TODO]
+    """
+    global library_function_dict
+    funcs = vm.module.funcs
+    # if the analyzed contract is ethereum
+    # 遍历所有函数，遍历每个函数的指令，不便利主函数，已经找到漏洞就跳出，遍历其余函数，但是不包括library
+    # 遍历其余函数中，如果发现了$number或$timestamp，则认为发现漏洞
+    if global_vars.contract_type == 'ethereum':
+        offset = len(vm.module.imports)
+        main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
+        exist_timestamp_or_number = False
+        for index, func in enumerate(funcs):
+            if exist_timestamp_or_number:
+                break
+            if index == main_index:
+                continue
+            expr = func.expr
+            if len(funcs) - index <= 125:
+                continue
+            for i, instr in enumerate(expr.data):
+                if call_library_function(instr, global_vars.library_offset, '$number') or call_library_function(instr, global_vars.library_offset, '$timestamp'):
+                    exist_timestamp_or_number = True 
+                    break
+        if exist_timestamp_or_number:
+            global_vars.block_dependency_count += 1
 
 def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
     """Check whether the current instruction is *call* and whether its parameter is a specific library function
@@ -256,7 +284,7 @@ def function_analysis_old(vm) -> None:
         if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
             global_vars.cannot_send_ETH = True
 
-def check_block_dependence(block_number_flag: bool) -> None:
+def check_block_dependence_old(block_number_flag: bool) -> None:
     """During symbolic execution, it is called when the 
     transfer call is satisfied and the parameters used 
     in the call are related to the block information.

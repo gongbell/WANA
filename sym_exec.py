@@ -14,7 +14,7 @@ from collections import defaultdict
 import logger
 import number
 from global_variables import global_vars
-from bug_analyzer import check_block_dependence
+from bug_analyzer import check_block_dependence_old
 from bug_analyzer import check_ethereum_delegate_call
 from bug_analyzer import check_ethereum_greedy
 from bug_analyzer import cur_state_analysis
@@ -665,12 +665,12 @@ def wasmfunc_call(
         flag_keccak256 = 0
         r = [r]
 
-    print(new_stack)
+    # print(new_stack)
 
     if any(id(elem) in global_vars.block_number_id_list for elem in valn):
         global_vars.add_random_number_id(id(r[0]))
-    print(f'old stack  {stack}')
-    print(f'new——stack {new_stack}')
+    # print(f'old stack  {stack}')
+    # print(f'new——stack {new_stack}')
     # if str(stack) != str(new_stack):
     #     print('change right')
     #     pass
@@ -1237,7 +1237,7 @@ def exec_expr(
 
                 # detect the send token call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.send_token_function_addr:
-                    check_block_dependence(block_number_flag)
+                    check_block_dependence_old(block_number_flag)
 
                 # detect the ethereum delegate call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
