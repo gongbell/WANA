@@ -135,6 +135,9 @@ class GlobalVariables:
         self.flag_num_host = 0
         self.flag_num_wasm = 0
 
+        # update check block dependency
+        self.dict_block_solver = dict()
+
     def re_init(self) -> None:
         self.__init__(self.contract_type, self.lvl, self.is_simple)
 
@@ -313,5 +316,8 @@ class GlobalVariables:
         self.flag_num_wasm += 1
         return self.flag_num_wasm - 1
 
+    def add_dict_block_solver(self, key, value)
+        if value
+        self.dict_block_solver[] = dict()
 
 global_vars = GlobalVariables()

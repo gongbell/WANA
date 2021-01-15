@@ -291,6 +291,7 @@ def fake_hostfunc_call(
         elif f.funcname == 'getExternalBalance':
             global_vars.add_flag_getExternalBalance()
 
+
         return []
     if f.funcname == 'getCallDataSize':
         global_vars.add_flag_getCallDataSize()
@@ -314,6 +315,17 @@ def fake_hostfunc_call(
         r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
         logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
+        print(solver)
+
+    elif f.funcname == 'getBlockTimestamp':
+        r = randint(0,20)
+        r = utils.gen_symbolic_value(bin_format.i64, f'getBlockTimestamp_{r}')
+        print(solver)
+    elif f.funcname == 'getBlockNumber':
+        r = randint(0,20)
+        r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
+        print(solver)
+        
     elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
     elif f.functype.rets[0] == bin_format.i64:
@@ -666,9 +678,12 @@ def wasmfunc_call(
         r = [r]
 
     # print(new_stack)
-
-    if any(id(elem) in global_vars.block_number_id_list for elem in valn):
-        global_vars.add_random_number_id(id(r[0]))
+    # print(global_vars.block_number_id_list)
+    # print(valn)
+    
+    # if any(id(elem) in global_vars.block_number_id_list for elem in valn):
+    #     print(id(r[0]))
+    #     global_vars.add_random_number_id(id(r[0]))
     # print(f'old stack  {stack}')
     # print(f'new——stack {new_stack}')
     # if str(stack) != str(new_stack):
@@ -686,6 +701,7 @@ def fake_wasmfunc_call(
         stack: Stack
 ):
     """The fake function call the internal wasm function.
+
 
     Args:
         module: the current module.
@@ -1233,7 +1249,9 @@ def exec_expr(
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
+                    print(f'aaa{id(r[0])}')
                     global_vars.add_random_number_id(id(r[0]))
+                    print(f'aaa{global_vars.block_number_id_list}')
 
                 # detect the send token call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.send_token_function_addr:
@@ -1242,6 +1260,7 @@ def exec_expr(
                 # detect the ethereum delegate call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
                     check_ethereum_delegate_call(expr.data[pc - 1])
+                
 
 
                 # detect the ethereum greedy bug: is the function called a payable?
@@ -1267,6 +1286,8 @@ def exec_expr(
                 # there may exists random number bug, therefore count the function call
                 if tab.elem[idx] in global_vars.tapos_block_function_addr:
                     global_vars.add_random_number_id(id(r[0]))
+                    print(f'aaa{global_vars.block_number_id_list}')
+
 
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])

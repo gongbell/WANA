@@ -58,8 +58,10 @@ class Runtime:
                 # The two if branch is used to detect the possibility of random vulnerability.
                 # If the "tapos_block_num" is called while "send_inline"/"send_deferred" is related
                 # and called, it could be considered a bug.
+                print(e.module,e.name)
                 if ((e.module in ('env',) and e.name in ('tapos_block_num', 'tapos_block_prefix'))
                         or (e.module in ('ethereum',) and e.name in ('getBlockNumber', 'getBlockHash', 'getBlockTimestamp'))):
+                    print(len(self.store.funcs))
                     global_vars.add_tapos_block_function_addr(len(self.store.funcs))
                 if (e.module in ('env',) and e.name in ('send_inline', 'send_deferred')
                         or e.module in ('ethereum',) and e.name in ('call',)):  # current version does not include 'callCode', 'callDelegate', 'callStatic'
