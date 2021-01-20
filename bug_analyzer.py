@@ -209,17 +209,24 @@ def find_symbolic_in_solver(solver:'solver'):
                 print(f'{ret} in solver')
                 r = ret
     if r:
+        print('already find')
         global_vars.add_dict_block_solver(r, 1)
 
 def check_block_dependence_dynamic(solver:'solver'):
-    for ret in global_vars.dict_block_solver:
-        if global_vars.dict_block_solver[ret][1] != 1:
-            continue
-        if str(global_vars.dict_block_solver[ret][0]) == str(solver):
-            print(f'find1 {ret} {str(solver)}')
-            global_vars.block_dependency_count += 1
-            global_vars.dict_block_solver.pop(ret)
-            break
+    if global_vars.dict_block_solver:
+        for ret in global_vars.dict_block_solver:
+            print(len(global_vars.dict_block_solver[ret]))
+            if len(global_vars.dict_block_solver[ret]) < 2:
+                continue
+            if str(global_vars.dict_block_solver[ret][0]) == str(solver):
+                print(f'find1 {ret} {str(solver)}')
+                global_vars.block_dependency_count += 1
+                global_vars.dict_block_solver.pop(ret)
+                break
+                
+    else:
+        print('empty')
+
 
 
 

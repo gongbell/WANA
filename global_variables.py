@@ -320,6 +320,8 @@ class GlobalVariables:
         if isinstance(value, z3.Solver):
             self.dict_block_solver[key] = list()
             self.dict_block_solver[key].append(value)
+        elif utils.is_symbolic(value):
+            self.dict_block_solver[key].append(value)
         elif isinstance(value, int):
             self.dict_block_solver[key].append(value)
 

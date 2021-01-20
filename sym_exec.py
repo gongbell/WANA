@@ -458,8 +458,16 @@ def wasmfunc_call(
             elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
                 logger.printt('lt right is symbolic')
                 flag_lt = 2
-            logger.lvl = 0
-            flag_not_print = 1
+            # elif utils.is_all_real(frame.locals[0].n) and utils.is_all_real(frame.locals[1].n) and utils.is_all_real(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+            #     logger.printt('4th is symbolic')
+            #     temp_symbolic = str(frame.locals[3].n)
+            #     flag_lt = 3
+            # logger.lvl = 0
+            # flag_not_print = 1
+            # if temp_symbolic:
+            #     if temp_symbolic.startswith('getBlockNumber') or temp_symbolic.startswith('getBlockTimestamp'):
+            #         global_vars.add_dict_block_solver(temp_symbolic, 1)
+            #         flag_lt += 10
 
         if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr':# or func_name == '$revert':
             logger.lvl = 0
@@ -631,11 +639,14 @@ def wasmfunc_call(
         r = [r]
 
     if func_name == '$lt' and flag_lt:
-        flag_lt = 0
         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
         store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
         ret = utils.gen_symbolic_value(bin_format.i64, f'lt_{global_vars.add_flag_num_wasm()}')
         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        # if flag_lt > 10:
+        #     global_vars.add_dict_block_solver(temp_symbolic, ret)
+        #     print(global_vars.dict_block_solver)
+        flag_lt = 0
         print('finish lt')
         r = Value.from_i64(0)
         r = [r]
@@ -1258,9 +1269,9 @@ def exec_expr(
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
-                    print(f'aaa{id(r[0])}')
+                    # print(f'aaa{id(r[0])}')
                     global_vars.add_random_number_id(id(r[0]))
-                    print(f'aaa{global_vars.block_number_id_list}')
+                    # print(f'aaa{global_vars.block_number_id_list}')
 
                 # detect the send token call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.send_token_function_addr:
@@ -1804,6 +1815,7 @@ def exec_expr(
                     computed = int(number.int2u64(a) < number.int2u64(b))
                 else:
                     computed = z3.simplify(z3.If(z3.ULT(a, b), z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
+                    print(f'aaab{a}{b}{computed}')
                 object_c = Value.from_i32(computed)
                 # print(f'ltu:computed:{computed} {type(computed)} object_c:{object_c} {type(object_c)}')
                 stack.add(object_c)
