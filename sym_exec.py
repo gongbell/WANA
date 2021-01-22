@@ -484,14 +484,19 @@ def wasmfunc_call(
             elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
                 logger.printt('lt right is symbolic')
                 flag_lt = 2
-            # elif utils.is_symbolic(frame.locals[0].n)   and utils.is_symbolic(frame.locals[3].n):
-               
-            if utils.is_symbolic(frame.locals[3].n):
-                if str(frame.locals[3].n) in global_vars.dict_block_solver:
+            elif utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[3].n):
+                logger.printt('lt left 1 and 3 are symbolic')
+                flag_lt = 3
+            
+            # 用于处理block信息进行比较的情况，直接给字典相应位置赋1
+            if utils.is_symbolic(frame.locals[3].n) and str(frame.locals[3].n) in global_vars.dict_block_solver:
+                global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
+            elif utils.is_symbolic(frame.locals[7].n) and str(frame.locals[7].n) in global_vars.dict_block_solver:
+                global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
                 # print(global_vars.dict_block_solver)
                 # print(str(frame.locals[3].n))
                 # print(str(frame.locals[3].n) in global_vars.dict_block_solver)
-                    global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
+            
             # elif utils.is_all_real(frame.locals[0].n) and utils.is_all_real(frame.locals[1].n) and utils.is_all_real(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
             #     logger.printt('4th is symbolic')
             #     temp_symbolic = str(frame.locals[3].n)
@@ -1013,6 +1018,7 @@ def exec_expr(
                             # print(solver.check() == z3.unsat)
                             # print(c,type(c),object_c,type(object_c))
                             logger.printt(f'recur {recur_depth}')
+                            print(path_condition)
                             solver.pop()
                             # 有时候返回数字0回栈顶不是个好的选择，如果if判断的栈顶元素是位向量，且内容为0，那么我们就返回它本身
                             return [object_c], global_vars.last_stack[-1]

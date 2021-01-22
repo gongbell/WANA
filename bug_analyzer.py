@@ -204,12 +204,12 @@ def find_symbolic_in_solver(solver:'solver'):
     r = str()
     for ret in global_vars.dict_block_solver:
         for l in list_solver:
-            print(f'find: {ret} {l} {type(ret)}')
+            # print(f'find: {ret} {l} {type(ret)}')
             if str(l).find(str(ret)) != -1:
-                print(f'{ret} in solver')
+                # print(f'{ret} in solver')
                 r = ret
     if r:
-        print('already find')
+        # print('already find')
         global_vars.add_dict_block_solver(r, 1)
 
 def check_block_dependence_dynamic(solver:'solver'):
