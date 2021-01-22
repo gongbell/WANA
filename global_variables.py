@@ -122,6 +122,9 @@ class GlobalVariables:
         # simulate $div
         self.num_div = 0
 
+        # simulate eth.storageLoad
+        self.num_storageLoad = 0
+
         # sum of pc 
         self.sum_pc = list()
         self.cur_sum_pc = 0
@@ -295,6 +298,12 @@ class GlobalVariables:
 
     def clear_num_div(self) -> None:
         self.num_div = 0
+
+    def add_num_storageLoad(self) -> None:
+        self.num_storageLoad += 1
+
+    def clear_num_storageLoad(self) -> None:
+        self.num_storageLoad = 0
 
     def add_flag_getExternalBalance(self) -> None:
         self.flag_getExternalBalance += 1

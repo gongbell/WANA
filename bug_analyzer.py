@@ -214,6 +214,7 @@ def find_symbolic_in_solver(solver:'solver'):
 
 def check_block_dependence_dynamic(solver:'solver'):
     if global_vars.dict_block_solver:
+        print(global_vars.dict_block_solver)
         for ret in global_vars.dict_block_solver:
             print(len(global_vars.dict_block_solver[ret]))
             if len(global_vars.dict_block_solver[ret]) < 2:

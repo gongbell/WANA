@@ -292,8 +292,23 @@ def fake_hostfunc_call(
             global_vars.add_flag_getCaller()
         elif f.funcname == 'getExternalBalance':
             global_vars.add_flag_getExternalBalance()
-
-
+        elif f.funcname == 'storageLoad':
+            # [TODO] save symbolic to address of parameter
+            # if opcode == bin_format.i64_store:
+            #     if a not in memory_address_symbolic_variable:
+            #         memory_address_symbolic_variable[a] = randint(0, len(m.data) - 8)
+            #     m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[
+            #                                                     a] + 8] = number.MemoryStore.pack_i64(v)
+            #     continue
+            #               m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+            #             print(m.data[a:a + 8])
+            a = 32
+            for i in range(4):
+                v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
+                global_vars.add_num_storageLoad()
+                m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+                a += 8
+            print(m.data[32:64])  
         return []
     if f.funcname == 'getCallDataSize':
         global_vars.add_flag_getCallDataSize()
@@ -319,7 +334,6 @@ def fake_hostfunc_call(
         logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
         check_block_dependence_dynamic(solver)
         print(solver)
-
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockTimestamp_{r}')
@@ -372,14 +386,15 @@ def wasmfunc_call(
     flag_div = 0
     flag_skip = 0
     func_name = list()
+    flag_bswap64 = 0
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
         global_vars.list_func.append(f'{func_name} {address} -> ')
         logger.printt(f'wasmfunc call: {global_vars.list_func} ')
         # logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
         if func_name == '$mload_internal':
-            logger.lvl = 0
-            flag_not_print = 1
+            # logger.lvl = 0
+            # flag_not_print = 1
             # print('$mload_internal: stop print')
             global_vars.add_flag_callDataCopy()
             global_vars.add_flag_getCallValue()
@@ -387,9 +402,10 @@ def wasmfunc_call(
             global_vars.add_flag_getExternalBalance()
 
         elif func_name == '$mstore_internal':
-            logger.lvl = 0
-            flag_not_print = 1
+            # logger.lvl = 0
+            # flag_not_print = 1
             # print('$mstore_internal: stop print')
+            pass
         elif func_name == '$calldataload':
             flag_callDataCopy = 1
         elif func_name == '$callvalue':
@@ -449,6 +465,16 @@ def wasmfunc_call(
             logger.printt('div right is symbolic')
             flag_div = 2
             flag_skip = 1
+    elif func_name == '$bswap64':
+        # [TODO] better to sumilate this func, maybe z3.solver can do it?
+        if utils.is_symbolic(frame.locals[0].n):
+            print(f'ccc{frame.locals[0].n}')
+            flag_bswap64 = 1
+            flag_skip = 1
+            pass
+        else:
+            logger.lvl = 0
+            flag_not_print = 1
 
     if flag_skip != 1:
         if func_name == '$lt':
@@ -458,12 +484,20 @@ def wasmfunc_call(
             elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
                 logger.printt('lt right is symbolic')
                 flag_lt = 2
+            # elif utils.is_symbolic(frame.locals[0].n)   and utils.is_symbolic(frame.locals[3].n):
+               
+            if utils.is_symbolic(frame.locals[3].n):
+                if str(frame.locals[3].n) in global_vars.dict_block_solver:
+                # print(global_vars.dict_block_solver)
+                # print(str(frame.locals[3].n))
+                # print(str(frame.locals[3].n) in global_vars.dict_block_solver)
+                    global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
             # elif utils.is_all_real(frame.locals[0].n) and utils.is_all_real(frame.locals[1].n) and utils.is_all_real(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
             #     logger.printt('4th is symbolic')
             #     temp_symbolic = str(frame.locals[3].n)
             #     flag_lt = 3
-            # logger.lvl = 0
-            # flag_not_print = 1
+            logger.lvl = 0
+            flag_not_print = 1
             # if temp_symbolic:
             #     if temp_symbolic.startswith('getBlockNumber') or temp_symbolic.startswith('getBlockTimestamp'):
             #         global_vars.add_dict_block_solver(temp_symbolic, 1)
@@ -693,6 +727,11 @@ def wasmfunc_call(
         flag_keccak256 = 0
         r = [r]
 
+    if flag_bswap64 == 1:
+        r = frame.locals[0]
+        flag_bswap64 = 0
+        r = [r]
+        print(f'ccca{r}')
     # print(new_stack)
     # print(global_vars.block_number_id_list)
     # print(valn)
@@ -1077,7 +1116,7 @@ def exec_expr(
                         logger.debugln(f'Exception1: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
-                        # print('行号', e.__traceback__.tb_lineno)
+                        print('行号', e.__traceback__.tb_lineno)
                         # print('sum_pc:', global_vars.cur_sum_pc)
 
 
@@ -1250,7 +1289,7 @@ def exec_expr(
                         stack.add(e)
                         break
                 stack.ext(v)
-                rint('return -> br_if2 path_depth<=0')
+                print('return -> br_if2 path_depth<=0')
                 break
 
             if opcode == bin_format.call:
@@ -1260,8 +1299,10 @@ def exec_expr(
                 # print(r)
                 # print(tmp)
                 # print(stack)
+                # print('1111')
                 stack.ext(r)
                 # print(stack)
+                # print('2222')
 
                 if global_vars.flag_revert > 0:
                     global_vars.clear_flag_revert()
@@ -1281,10 +1322,13 @@ def exec_expr(
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
                     check_ethereum_delegate_call(expr.data[pc - 1])
                 
+                # print('3333')
 
 
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
+                # print('4444')
+
                 continue
 
             if opcode == bin_format.call_indirect:
@@ -1459,7 +1503,6 @@ def exec_expr(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     continue
-
                 if a + bin_format.opcodes[opcode][2] > len(m.data):
                     path_abort = True
                     temp_stack = Stack()
@@ -1477,7 +1520,12 @@ def exec_expr(
                 if opcode == bin_format.i64_load:
                     # [TODO] a better method to process out of index
                     a = a if 0 <= a <= len(m.data) - 8 else randint(0, len(m.data) - 8)
-                    stack.add(Value.from_i64(number.MemoryLoad.i64(m.data[a:a + 8])))
+                    if utils.is_symbolic(m.data[a]):
+                        tmp = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+                        print(f'cccaaa{tmp}')
+                    else:
+                        tmp = number.MemoryLoad.i64(m.data[a:a + 8])
+                    stack.add(Value.from_i64(tmp))
                     continue
 
                 # [TODO] Using some approaches to implement float byte-store.
@@ -1521,7 +1569,12 @@ def exec_expr(
                 continue
 
             if bin_format.i32_store <= opcode <= bin_format.i64_store32:
+                # v is value, a is address
                 v = stack.pop().n
+                # print(type(v))
+                # if isinstance(v, Value):
+                #     print(type(v.n))
+                #     v = v.n
                 a = stack.pop().n + i.immediate_arguments[1]
                 if utils.is_symbolic(a):
                     a = z3.simplify(a)
@@ -1595,7 +1648,7 @@ def exec_expr(
                     continue
                 if opcode == bin_format.i64_store:
                     m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                    # print(m.data[a:a + 8])
+                    print(m.data[a:a + 8])
                     # print(a,v)
                     # print(number.MemoryStore.pack_i64(128))
                     continue
