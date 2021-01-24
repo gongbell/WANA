@@ -418,9 +418,8 @@ def after_sym_exec(name):
         logger.println(f'{name}: mishandled exception found')
     else:
         print(f'{global_vars.call_symbolic_ret}')
-
-
-
+    if global_vars.ethereum_reentrancy_detection > 0:
+        logger.println(f'{name}: reentrancy found')
 
 if __name__ == '__main__':
     main()

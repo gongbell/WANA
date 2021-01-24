@@ -141,6 +141,12 @@ class GlobalVariables:
         # update check block dependency
         self.dict_block_solver = dict()
 
+        # Record the initial memory location of the symbol value
+        self.dict_symbolic_address = dict()
+
+        self.ethereum_reentrancy_detection = 0
+
+
     def re_init(self) -> None:
         self.__init__(self.contract_type, self.lvl, self.is_simple)
 
@@ -332,7 +338,54 @@ class GlobalVariables:
         elif utils.is_symbolic(value):
             self.dict_block_solver[key].append(value)
         elif isinstance(value, int):
+            print(value)
             self.dict_block_solver[key].append(value)
+            print(value)
 
+    def add_dict_symbolic_address(self, key, value):
+        self.dict_symbolic_address[key] = value
+
+    def find_dict_root(self, key):
+        dic = dict()
+        if not (key in self.dict_symbolic_address):
+            print(f'{key} not in')
+            return 
+        if isinstance(self.dict_symbolic_address[key], list):
+            print(f'{self.dict_symbolic_address[key]}')
+            for item in self.dict_symbolic_address[key]:
+                tmp = self.find_dict_root(item)
+                if tmp:
+                    dic.update(tmp)
+            return dic
+        elif isinstance(self.dict_symbolic_address[key], int):
+            print(f'int {self.dict_symbolic_address[key]}')
+            dic[key] = self.dict_symbolic_address[key]
+            return dic
+        else:
+            print(f'{key} -> ')
+            return self.find_dict_root(self.dict_symbolic_address[key])
+
+    def clear_dict_symbolic_address(self):
+        self.dict_symbolic_address.clear()
+
+    def find_reentrancy_detection(self) -> None:
+        self.ethereum_reentrancy_detection +=1
+    # # old version
+    # def find_dict_root(self, key):
+    #     if isinstance(self.dict_symbolic_address[key], int):
+    #         print(f'{self.dict_symbolic_address[key]}')
+    #         return self.dict_symbolic_address[key]
+    #     else:
+    #         print(f'{key} -> ')
+    #         return self.find_dict_root(self.dict_symbolic_address[key])
+
+    # # 普适版寻找符号值的最初位置
+    # def find_dict_root(dic, key):
+    #     if isinstance(dic[key], int):
+    #         print(f'{dic[key]}')
+    #         return dic[key]
+    #     else:
+    #         print(f'{key} -> ')
+    #         return find_dict_root(dic, dic[key])
 
 global_vars = GlobalVariables()

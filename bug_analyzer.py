@@ -10,6 +10,8 @@ import logger
 import structure
 import bin_format
 import z3
+import number
+from z3.z3util import get_vars
 from runtime import Label, Value
 from runtime import WasmFunc
 from global_variables import global_vars
@@ -204,31 +206,82 @@ def find_symbolic_in_solver(solver:'solver'):
     r = str()
     for ret in global_vars.dict_block_solver:
         for l in list_solver:
-            # print(f'find: {ret} {l} {type(ret)}')
+            print(f'find: {ret} {l} {type(ret)}')
             if str(l).find(str(ret)) != -1:
-                # print(f'{ret} in solver')
+                print(f'{ret} in solver')
                 r = ret
     if r:
-        # print('already find')
+        print('already find')
+        print(f'{type(r)} {r}')
         global_vars.add_dict_block_solver(r, 1)
+        print('already end')
 
 def check_block_dependence_dynamic(solver:'solver'):
     if global_vars.dict_block_solver:
-        print(global_vars.dict_block_solver)
+        # print(global_vars.dict_block_solver)
         for ret in global_vars.dict_block_solver:
-            print(len(global_vars.dict_block_solver[ret]))
+            # print(len(global_vars.dict_block_solver[ret]))
             if len(global_vars.dict_block_solver[ret]) < 2:
                 continue
             if str(global_vars.dict_block_solver[ret][0]) == str(solver):
-                print(f'find1 {ret} {str(solver)}')
+                # print(f'find1 {ret} {str(solver)}')
                 global_vars.block_dependency_count += 1
                 global_vars.dict_block_solver.pop(ret)
                 break
                 
     else:
-        print('empty')
+        # print('empty')
+        pass
+
+# def clear_dict_symbolic_address():
 
 
+def check_reentrancy_bug(path_condition:list, memory, solver):
+    # Detect Reentrancy Detection
+    # [TODO] 这里未考虑内存中i64，i32等的区别，这里参考的是i64
+    print(path_condition)
+    print(solver)
+    print(f'dict: {global_vars.dict_symbolic_address}')
+    list_solver = solver.units()
+    new_path_condition = list()
+    for expr in list_solver: # 也许不是path_condition, 而是 solver
+        if not z3.is_expr(expr): # 仅处理符号值
+            continue
+        vars = get_vars(expr)
+        print(f'vars: {vars}')
+        for var in vars:
+            if var in global_vars.dict_symbolic_address: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
+                print(f'var: {var}')
+                tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
+                if not tmp_dict:
+                    continue
+                print(f'tmp_dict: {tmp_dict}')
+                for item in tmp_dict: 
+                    print(f'item: {item}')
+                    address = tmp_dict[item]
+                    print(f'add{address} {type(address)}')
+                    print(memory.data[address:address+8])
+                    new_var = memory.data[address]
+                    print(f'new_var: {new_var}')
+                    new_var_2 = Value.from_i64(number.MemoryLoad.i64(memory.data[address:address+8]))
+                    new_var_3 = number.MemoryLoad.i64(memory.data[address:address+8])
+                    print(f'new_var_2: {new_var_2}')
+                    print(f'new_var_3: {new_var_3}')
+                    # 下一句比较的对象可能是newvar 或 newvar2
+                    print(type(item), type(new_var_2), type(new_var_3))
+                    new_path_condition.append(item == new_var_3)#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
+                    
+                    # if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
+    solver.push()
+    print(f'before solver {solver}')
+    solver.add(new_path_condition)
+    print(f'after solver {solver}')
+    ret_val = (solver.check() == z3.sat)#检测一下是不是能够满足条件
+    print(ret_val)
+    if ret_val:# 如果有解，说明可以再次进入call
+        global_vars.find_reentrancy_detection()
+    solver.pop()
+    
 
 
 def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:

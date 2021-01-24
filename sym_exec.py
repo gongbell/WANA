@@ -9,6 +9,7 @@ import z3
 import copy
 import utils
 from random import randint, uniform
+from z3.z3util import get_vars
 from collections import defaultdict
 
 import logger
@@ -23,6 +24,7 @@ from runtime import *
 from bug_analyzer import library_function_dict
 from bug_analyzer import find_symbolic_in_solver
 from bug_analyzer import check_block_dependence_dynamic
+from bug_analyzer import check_reentrancy_bug
 import pprint
 
 
@@ -302,11 +304,14 @@ def fake_hostfunc_call(
             #     continue
             #               m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
             #             print(m.data[a:a + 8])
+            print(m.data[32:64])  
             a = 32
             for i in range(4):
                 v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
                 global_vars.add_num_storageLoad()
                 m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+                print(f'v.type:{type(v)}')
+                global_vars.add_dict_symbolic_address(v, a)
                 a += 8
             print(m.data[32:64])  
         return []
@@ -333,6 +338,7 @@ def fake_hostfunc_call(
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
         logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
         check_block_dependence_dynamic(solver)
+        check_reentrancy_bug(path_condition, m, solver)
         print(solver)
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
@@ -493,6 +499,13 @@ def wasmfunc_call(
                 global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
             elif utils.is_symbolic(frame.locals[7].n) and str(frame.locals[7].n) in global_vars.dict_block_solver:
                 global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
+
+            # 用于处理reentrancy
+            list_lt_symbolic = list()
+            for pos in range(8):
+                if utils.is_symbolic(frame.locals[pos].n):
+                    list_lt_symbolic.append(frame.locals[pos].n)
+            print(f'lt对应的符号值 {list_lt_symbolic}')
                 # print(global_vars.dict_block_solver)
                 # print(str(frame.locals[3].n))
                 # print(str(frame.locals[3].n) in global_vars.dict_block_solver)
@@ -528,6 +541,10 @@ def wasmfunc_call(
         new_stack = stack
         
     tmp = global_vars.list_func.pop()
+    # if len(global_vars.list_func) < 3:
+    #     print(f'before return, dict:{global_vars.dict_symbolic_address}')
+    #     global_vars.clear_dict_symbolic_address()
+    #     print(f'after clear, dict:{global_vars.dict_symbolic_address}')
     logger.printt(f'return func {tmp}')
     logger.printt(f'{global_vars.list_func}')
     
@@ -685,6 +702,13 @@ def wasmfunc_call(
         # if flag_lt > 10:
         #     global_vars.add_dict_block_solver(temp_symbolic, ret)
         #     print(global_vars.dict_block_solver)
+
+        # 将lt对应的符号值，加入字典中
+        print(f'ret:{type(ret)}  g2: {type(store.globals[module.globaladdrs[2]])}')
+        # for item in list_lt_symbolic:
+        global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
+        print(f'dict:{global_vars.dict_symbolic_address}')
+
         flag_lt = 0
         print('finish lt')
         r = Value.from_i64(0)
@@ -736,7 +760,7 @@ def wasmfunc_call(
         r = frame.locals[0]
         flag_bswap64 = 0
         r = [r]
-        print(f'ccca{r}')
+        # print(f'ccca{r}')
     # print(new_stack)
     # print(global_vars.block_number_id_list)
     # print(valn)
@@ -1042,9 +1066,12 @@ def exec_expr(
                             block_number_flag = id(c) in global_vars.block_number_id_list or block_number_flag  # set flag if "c" is associated with the block number
                             path_condition.append(c != 0)
                             recur_depth += 1
+                            print(f'abcd{recur_depth}')
                             gas_cost -= bin_format.gas_cost.get(i, 0)
                             global_vars.sum_pc.append(global_vars.cur_sum_pc)
+                            print(f'before left branch, function length:{len(global_vars.list_func)} {path_condition}')
                             left_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
+
                             logger.debugln(f'leave left branch{pc}')
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
@@ -1065,8 +1092,24 @@ def exec_expr(
 
                         # print('sum_pc:', global_vars.cur_sum_pc)
                         # print('行号', e.__traceback__.tb_lineno)
-                    path_depth -= 1
+                    # 用函数的形式重构下列代码
+                    print(f'after left branch, function length:{len(global_vars.list_func)} {path_condition}')
+                    print(f'after left branch, dict:{global_vars.dict_symbolic_address}')
+                    print(f'after left branch, solver:{solver}')
+                    list_solver = solver.units()
+                    vars = get_vars(list_solver[-1])
+                    print(vars)
+                    for var in vars:
+                        print(var, type(list_solver[-1]))
+                        if str(var) == 'callDataCopy_0':
+                            print(f'ac \'{str(list_solver[-1])[-5:]}\'')
+                            if len(global_vars.list_func) == 1:
+                                global_vars.clear_dict_symbolic_address()
+                                print('bcb')
 
+                    # print(f'after clear, dict:{global_vars.dict_symbolic_address}')
+
+                    path_depth -= 1
 
                     # print(f'right before {solver}')
                     solver.pop()
@@ -1097,6 +1140,7 @@ def exec_expr(
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
                             global_vars.sum_pc.append(global_vars.cur_sum_pc)
+                            print(f'before right branch, function length:{len(global_vars.list_func)} {path_condition}')
                             right_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
                             logger.debugln(f'leave right branch {pc}')
                             logger.printt(new_stack)
@@ -1874,7 +1918,7 @@ def exec_expr(
                     computed = int(number.int2u64(a) < number.int2u64(b))
                 else:
                     computed = z3.simplify(z3.If(z3.ULT(a, b), z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
-                    print(f'aaab{a}{b}{computed}')
+                    print(f'aaab {a} {b} {computed}')
                 object_c = Value.from_i32(computed)
                 # print(f'ltu:computed:{computed} {type(computed)} object_c:{object_c} {type(object_c)}')
                 stack.add(object_c)
