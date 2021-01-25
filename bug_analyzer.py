@@ -235,8 +235,10 @@ def check_block_dependence_dynamic(solver:'solver'):
 
 # def clear_dict_symbolic_address():
 
+def check_reentrancy_bug():
+    pass
 
-def check_reentrancy_bug(path_condition:list, memory, solver):
+def check_reentrancy_bug_old(path_condition:list, memory, solver):
     # Detect Reentrancy Detection
     # [TODO] 这里未考虑内存中i64，i32等的区别，这里参考的是i64
     print(path_condition)

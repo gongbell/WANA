@@ -266,6 +266,7 @@ def fake_hostfunc_call(
         result: the list of result, only one elem.
     """
     f: HostFunc = store.funcs[address]
+    # frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
     valn = [stack.pop() for _ in f.functype.args][::-1]
     # [TODO] A good method for return value.
     if f.funcname:
@@ -305,15 +306,42 @@ def fake_hostfunc_call(
             #               m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
             #             print(m.data[a:a + 8])
             print(m.data[32:64])  
+            print(m.data[0:32])  
             a = 32
+            list_v = list()
+            # tmp = int()
             for i in range(4):
                 v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
+                list_v.append(v)
                 global_vars.add_num_storageLoad()
                 m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
                 print(f'v.type:{type(v)}')
-                global_vars.add_dict_symbolic_address(v, a)
+                if i == 0:
+                    if utils.is_symbolic(m.data[a-32]):
+                        print(f'{a-32}:{z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))}')
+                        tmp = z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
+                    else:
+                        print(f'{a-32}:{number.MemoryLoad.i64(m.data[a-32:a + 8-32])}')
+                        tmp = number.MemoryLoad.i64(m.data[a-32:a + 8-32])
+                else:
+                    if utils.is_symbolic(m.data[a-32]):
+                        print(f'{a-32}:{z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))}')
+                        tmp += z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
+                    else:
+                        print(f'{a-32}:{number.MemoryLoad.i64(m.data[a-32:a + 8-32])}')
+                        tmp += number.MemoryLoad.i64(m.data[a-32:a + 8-32])
+                # frame.locals[4].n
+                    #     tmp = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+                    #     print(f'cccaaa{tmp}')
+                    # else:
+                    #     tmp = number.MemoryLoad.i64(m.data[a:a + 8])
+                    # stack.add(Value.from_i64(tmp))
                 a += 8
+            global_vars.add_dict_symbolic_address(tmp, list_v)
+            print(f'字典：{ global_vars.dict_symbolic_address}')
             print(m.data[32:64])  
+        # elif f.funcname == 'storageStore':
+
         return []
     if f.funcname == 'getCallDataSize':
         global_vars.add_flag_getCallDataSize()
@@ -337,8 +365,10 @@ def fake_hostfunc_call(
         r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
         logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
+        print(f'solver: {solver}')
+        print(f'path_condition{path_condition}')
         check_block_dependence_dynamic(solver)
-        check_reentrancy_bug(path_condition, m, solver)
+        # check_reentrancy_bug(path_condition, m, solver)
         print(solver)
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
@@ -1093,9 +1123,13 @@ def exec_expr(
                         # print('sum_pc:', global_vars.cur_sum_pc)
                         # print('行号', e.__traceback__.tb_lineno)
                     # 用函数的形式重构下列代码
-                    print(f'after left branch, function length:{len(global_vars.list_func)} {path_condition}')
+                    print(f'after left branch, function length:{len(global_vars.list_func)} ')
                     print(f'after left branch, dict:{global_vars.dict_symbolic_address}')
                     print(f'after left branch, solver:{solver}')
+                    print(f'after left branch, path_condition:{path_condition}')
+                    m = store.mems[module.memaddrs[0]]
+                    # print(f'after left branch, len m.data:{len(m.data)}')
+                    print(f'after left branch, m.data:{m.data[0:100]}')
                     list_solver = solver.units()
                     vars = get_vars(list_solver[-1])
                     print(vars)
