@@ -142,9 +142,15 @@ class GlobalVariables:
         self.dict_block_solver = dict()
 
         # Record the initial memory location of the symbol value
+        # Also record the converted symbol value
         self.dict_symbolic_address = dict()
 
+        # save symbolic of eth.storageStore, use it to detect reentrancy
+        self.list_storageStore = list()
+
         self.ethereum_reentrancy_detection = 0
+
+
 
 
     def re_init(self) -> None:
@@ -348,7 +354,7 @@ class GlobalVariables:
     def find_dict_root(self, key):
         dic = dict()
         if not (key in self.dict_symbolic_address):
-            print(f'{key} not in')
+            print(f'{key} not in dict')
             return 
         if isinstance(self.dict_symbolic_address[key], list):
             print(f'{self.dict_symbolic_address[key]}')
@@ -357,20 +363,39 @@ class GlobalVariables:
                 if tmp:
                     dic.update(tmp)
             return dic
-        elif isinstance(self.dict_symbolic_address[key], tuple):
-            print(f'dict {self.dict_symbolic_address[key]}')
-            dic[key] = self.dict_symbolic_address[key][1]
-            return dic
         else:
-            print(f'{key} -> ')
-            return self.find_dict_root(self.dict_symbolic_address[key])
+            print(f'{key} : {self.dict_symbolic_address[key]} ')
+            dic[key] = self.dict_symbolic_address[key]
+            return dic
 
     def clear_dict_symbolic_address(self):
         self.dict_symbolic_address.clear()
 
     def find_reentrancy_detection(self) -> None:
         self.ethereum_reentrancy_detection +=1
+
     # # old version
+    # def find_dict_root(self, key):
+    #     dic = dict()
+    #     if not (key in self.dict_symbolic_address):
+    #         print(f'{key} not in dict')
+    #         return 
+    #     if isinstance(self.dict_symbolic_address[key], list):
+    #         print(f'{self.dict_symbolic_address[key]}')
+    #         for item in self.dict_symbolic_address[key]:
+    #             tmp = self.find_dict_root(item)
+    #             if tmp:
+    #                 dic.update(tmp)
+    #         return dic
+    #     elif isinstance(self.dict_symbolic_address[key], tuple):
+    #         print(f'dict {self.dict_symbolic_address[key]}')
+    #         dic[key] = self.dict_symbolic_address[key][1]
+    #         return dic
+    #     else:
+    #         print(f'{key} -> ')
+    #         return self.find_dict_root(self.dict_symbolic_address[key])
+
+    # # old_old version
     # def find_dict_root(self, key):
     #     if isinstance(self.dict_symbolic_address[key], int):
     #         print(f'{self.dict_symbolic_address[key]}')

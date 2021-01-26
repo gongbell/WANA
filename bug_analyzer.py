@@ -258,7 +258,7 @@ def check_reentrancy_bug(path_condition:list, memory, solver):
                 for item in tmp_dict: 
                 # if len(global_vars.dict_symbolic_address[var]) > 1:
                     print(f'item: {item}')
-                    if tmp_dict[item] == 1:
+                    if item in global_vars.list_storageStore:
                         continue
                     else:
                         print(f'没有固化{var}:{global_vars.dict_symbolic_address[var]}')
