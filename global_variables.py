@@ -357,9 +357,9 @@ class GlobalVariables:
                 if tmp:
                     dic.update(tmp)
             return dic
-        elif isinstance(self.dict_symbolic_address[key], int):
-            print(f'int {self.dict_symbolic_address[key]}')
-            dic[key] = self.dict_symbolic_address[key]
+        elif isinstance(self.dict_symbolic_address[key], tuple):
+            print(f'dict {self.dict_symbolic_address[key]}')
+            dic[key] = self.dict_symbolic_address[key][1]
             return dic
         else:
             print(f'{key} -> ')

@@ -337,10 +337,44 @@ def fake_hostfunc_call(
                     #     tmp = number.MemoryLoad.i64(m.data[a:a + 8])
                     # stack.add(Value.from_i64(tmp))
                 a += 8
-            global_vars.add_dict_symbolic_address(tmp, list_v)
+            for item in list_v:
+                global_vars.add_dict_symbolic_address(item, (tmp, 0))
             print(f'字典：{ global_vars.dict_symbolic_address}')
             print(m.data[32:64])  
-        # elif f.funcname == 'storageStore':
+        elif f.funcname == 'storageStore':
+            a = 0
+            list_value = list()
+            for i in range(4):
+                # v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
+                # list_v.append(v)
+                # global_vars.add_num_storageLoad()
+                # m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+                # print(f'v.type:{type(v)}')
+                if i == 0:
+                    if utils.is_symbolic(m.data[a]):
+                        tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+                    else:
+                        tmp_address = number.MemoryLoad.i64(m.data[a:a + 8])
+                else:
+                    if utils.is_symbolic(m.data[a]):
+                        tmp_address += z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+                    else:
+                        tmp_address += number.MemoryLoad.i64(m.data[a:a + 8])
+
+                if utils.is_symbolic(m.data[a + 32]):
+                    list_value.append(z3.simplify(number.MemoryLoad.i64(m.data[a + 32:a + 32 + 8])))
+                else:
+                    list_value.append(number.MemoryLoad.i64(m.data[a + 32:a + 32 + 8]))
+                a += 8
+            print(f'list_value: {list_value}, address: {tmp_address}')
+            print(f'之前字典：{global_vars.dict_symbolic_address}')
+            for item in list_value:
+                if item in global_vars.dict_symbolic_address:
+                    if global_vars.dict_symbolic_address[item] == tmp_address:
+                        print(f'{global_vars.dict_symbolic_address[item]}')
+                        global_vars.dict_symbolic_address[item][tmp_address] = 1
+                        # global_vars.dict_symbolic_address.pop(tmp_address) # 不用弹，只要改变其标记即可
+            print(f'之后字典：{global_vars.dict_symbolic_address}')
 
         return []
     if f.funcname == 'getCallDataSize':
@@ -368,7 +402,7 @@ def fake_hostfunc_call(
         print(f'solver: {solver}')
         print(f'path_condition{path_condition}')
         check_block_dependence_dynamic(solver)
-        # check_reentrancy_bug(path_condition, m, solver)
+        check_reentrancy_bug(path_condition, m, solver)
         print(solver)
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
@@ -423,6 +457,7 @@ def wasmfunc_call(
     flag_skip = 0
     func_name = list()
     flag_bswap64 = 0
+    flag_mul = 0
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
         global_vars.list_func.append(f'{func_name} {address} -> ')
@@ -492,6 +527,15 @@ def wasmfunc_call(
                 logger.lvl = 0
                 flag_not_print = 1
                 flag_skip = 1
+    elif func_name == '$mul':
+        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+            logger.printt('mul left is symbolic')
+            flag_mul = 1
+            flag_skip = 1
+        elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+            logger.printt('mul right is symbolic')
+            flag_mul = 2
+            flag_skip = 1
     elif func_name == '$div':
         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
             logger.printt('div left is symbolic')
@@ -985,7 +1029,7 @@ def exec_expr(
         AttributeError: if the Label instance is read for getting value
         z3Exception: if the symbolic variable is converted
     """
-    global path_abort, path_depth, recur_depth, loop_depth_dict, block_number_flag, gas_cost
+    global path_abort, path_depth, recur_depth, loop_depth_dict, block_number_flag, gas_cost, path_condition
     branch_res = []
     module = frame.module
     if not expr.data:
@@ -1066,6 +1110,7 @@ def exec_expr(
                     logger.debugln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     len_list_func = len(global_vars.list_func)
+                    len_path_condition = len(path_condition)
                     global_vars.len_list_func = len(global_vars.list_func)
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
                         if utils.is_symbolic(c): #and c
@@ -1112,13 +1157,15 @@ def exec_expr(
                                 branch_res += left_branch_res
                                 if len(left_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], left_branch_res[:])
-                            path_condition.pop()
+                            path_condition = path_condition[:len_path_condition]
+                            # path_condition.pop()
                     except TimeoutError:
                         logger.debugln('Timeout in path exploration.')
                     except Exception as e:
                         logger.debugln(f'Exception: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
+                        path_condition = path_condition[:len_path_condition]
 
                         # print('sum_pc:', global_vars.cur_sum_pc)
                         # print('行号', e.__traceback__.tb_lineno)
@@ -1193,13 +1240,15 @@ def exec_expr(
                                 branch_res += right_branch_res
                                 if len(right_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], right_branch_res[:])
-                            path_condition.pop()
+                            # path_condition.pop()
+                            path_condition = path_condition[:len_path_condition]
                     except TimeoutError as e:
                         raise e
                     except Exception as e:
                         logger.debugln(f'Exception1: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
+                        path_condition = path_condition[:len_path_condition]
                         print('行号', e.__traceback__.tb_lineno)
                         # print('sum_pc:', global_vars.cur_sum_pc)
 

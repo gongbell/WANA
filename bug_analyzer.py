@@ -235,7 +235,56 @@ def check_block_dependence_dynamic(solver:'solver'):
 
 # def clear_dict_symbolic_address():
 
-def check_reentrancy_bug():
+def check_reentrancy_bug(path_condition:list, memory, solver):
+    print('开始检测reentrancy')
+    print(f'solver: {solver}')
+    print(f'path_condition: {path_condition}')
+    print(f'dict: {global_vars.dict_symbolic_address}')
+    list_solver = solver.units()
+    for expr in list_solver: # 也许不是path_condition, 而是 solver
+        if not z3.is_expr(expr): # 仅处理符号值
+            continue
+        vars = get_vars(expr)
+        print(f'vars: {vars}')
+        flag_empty = 0
+        for var in vars:
+            if var in global_vars.dict_symbolic_address: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
+                flag_empty += 1
+                print(f'var: {var}')
+                tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
+                if not tmp_dict:
+                    continue
+                print(f'tmp_dict: {tmp_dict}')
+                for item in tmp_dict: 
+                # if len(global_vars.dict_symbolic_address[var]) > 1:
+                    print(f'item: {item}')
+                    if tmp_dict[item] == 1:
+                        continue
+                    else:
+                        print(f'没有固化{var}:{global_vars.dict_symbolic_address[var]}')
+                        global_vars.find_reentrancy_detection()
+        if flag_empty == 0:
+            print(f'根本没有用到自定义变量，过分！')
+            global_vars.find_reentrancy_detection()
+                # tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
+                # if not tmp_dict:
+                #     continue
+                # print(f'tmp_dict: {tmp_dict}')
+                # for item in tmp_dict: 
+                    # print(f'item: {item}')
+                    # address = tmp_dict[item]
+                    # print(f'add{address} {type(address)}')
+                    # print(memory.data[address:address+8])
+                    # new_var = memory.data[address]
+                    # print(f'new_var: {new_var}')
+                    # new_var_2 = Value.from_i64(number.MemoryLoad.i64(memory.data[address:address+8]))
+                    # new_var_3 = number.MemoryLoad.i64(memory.data[address:address+8])
+                    # print(f'new_var_2: {new_var_2}')
+                    # print(f'new_var_3: {new_var_3}')
+                    # # 下一句比较的对象可能是newvar 或 newvar2
+                    # print(type(item), type(new_var_2), type(new_var_3))
+                    # new_path_condition.append(item == new_var_3)#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
+                    
     pass
 
 def check_reentrancy_bug_old(path_condition:list, memory, solver):
