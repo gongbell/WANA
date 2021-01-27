@@ -286,14 +286,41 @@ def fake_hostfunc_call(
                 global_vars.add_flag_callDataCopy()
             for j in range(32):
                 m.data[j] = randint(1, 9)
+        elif f.funcname == 'getCaller':
+            address = valn[0].n
+            # list_v = list()
+            # tmp = int()
+            for i in range(4):
+                # [TODO] 每次调用eth.caller，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
+                v = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+                m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
+                global_vars.add_num_getCaller()
+                # list_v.append(v)
+                address += 8
+            # [TODO]这个应该不需要加入符号表吧，比较仅仅是获取数据，没有特定路径，不可能被固化，不影响reentrancy的判断
+            # for item in list_v:
+            #     global_vars.add_dict_symbolic_address(item, tmp)
         elif f.funcname == 'getCallValue':
-            global_vars.add_flag_getCallValue()                
+            address = valn[0].n
+            if global_vars.flag_getCallValue_in_function:
+                print('sumilate getCallValue = 0')
+                for i in range(4):
+                    # [TODO] 每次调用eth.getCallValue，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
+                    v = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+                    m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
+                    global_vars.add_num_getCallValue()
+                    address += 8
+            else:
+                for i in range(32):
+                    m.data[address + i] = 0
+
+            # 以下是老版
+            # global_vars.add_flag_getCallValue()                
             # for j in range(32):
             #     m.data[j] = 0
             # print(m.data[:40])
             # print(f'call eth.getCallValue flag: {global_vars.flag_getCallValue}')
-        elif f.funcname == 'getCaller':
-            global_vars.add_flag_getCaller()
+
         elif f.funcname == 'getExternalBalance':
             global_vars.add_flag_getExternalBalance()
         elif f.funcname == 'storageLoad':
@@ -436,7 +463,8 @@ def fake_hostfunc_call(
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
         global_vars.add_dict_block_solver(str(r), solver)
         # print(solver)
-        
+
+
     elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
     elif f.functype.rets[0] == bin_format.i64:
@@ -507,9 +535,9 @@ def wasmfunc_call(
                 # print(f'{len(global_vars.list_func)} true')
             flag_getCallValue = 1
             # print(global_vars.flag_getCallValue, flag_getCallValue)
-        elif func_name == '$caller':
-            flag_getCaller = 1
-            # print(f'flag {flag_getCaller}')
+        # elif func_name == '$caller':
+        #     flag_getCaller = 1
+        #     # print(f'flag {flag_getCaller}')
         elif func_name == '$keccak256':
             flag_keccak256 = 1
             flag_skip = 1
@@ -696,69 +724,69 @@ def wasmfunc_call(
         r = [r]
         # return [r]
         # simulate eth.getCallValue
-    if global_vars.flag_getCallValue > 1 and flag_getCallValue:
-        # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
-        # print(global_vars.flag_getCallValue_in_function)
-        if global_vars.flag_getCallValue_in_function:
-            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-            r = Value(bin_format.i64, ret)
-            global_vars.add_num_getCallValue()
+    # if global_vars.flag_getCallValue > 1 and flag_getCallValue:
+    #     # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
+    #     # print(global_vars.flag_getCallValue_in_function)
+    #     if global_vars.flag_getCallValue_in_function:
+    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+    #         r = Value(bin_format.i64, ret)
+    #         global_vars.add_num_getCallValue()
 
-            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-            store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_getCallValue()
+    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+    #         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #         global_vars.add_num_getCallValue()
 
-            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-            store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_getCallValue()
+    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+    #         store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #         global_vars.add_num_getCallValue()
 
-            ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-            store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_getCallValue()
-            global_vars.change_flag_getCallValue_in_function()
-            r = [r]
-            logger.printt(f'$getCallvalue -> symbolic {global_vars.num_getCallValue-4}~{global_vars.num_getCallValue}')
-        else:
-            r = Value.from_i64(0)
-            store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            r = [r]
-            logger.printt(f'$getCallvalue -> real 0')
+    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
+    #         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #         global_vars.add_num_getCallValue()
+    #         global_vars.change_flag_getCallValue_in_function()
+    #         r = [r]
+    #         logger.printt(f'$getCallvalue -> symbolic {global_vars.num_getCallValue-4}~{global_vars.num_getCallValue}')
+    #     else:
+    #         r = Value.from_i64(0)
+    #         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #         store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #         r = [r]
+    #         logger.printt(f'$getCallvalue -> real 0')
 
-        global_vars.clear_flag_callDataCopy()
-        global_vars.clear_flag_getCallValue()
-        global_vars.clear_flag_getCaller()
-        global_vars.clear_flag_getExternalBalance()
+    #     global_vars.clear_flag_callDataCopy()
+    #     global_vars.clear_flag_getCallValue()
+    #     global_vars.clear_flag_getCaller()
+    #     global_vars.clear_flag_getExternalBalance()
 
-        flag_getCallValue = 0
+    #     flag_getCallValue = 0
 
-    if global_vars.flag_getCaller > 1 and flag_getCaller:
-        # 向栈顶压一个符号值
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
-        r = Value(bin_format.i64, ret)
-        global_vars.add_num_getCaller()
+    # if global_vars.flag_getCaller > 1 and flag_getCaller:
+    #     # 向栈顶压一个符号值
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     r = Value(bin_format.i64, ret)
+    #     global_vars.add_num_getCaller()
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getCaller()
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_getCaller()
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getCaller()
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_getCaller()
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getCaller()
-        #[TODO] num_callDataCopy清零的函数没有调用
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_getCaller()
+    #     #[TODO] num_callDataCopy清零的函数没有调用
 
-        global_vars.clear_flag_callDataCopy()
-        global_vars.clear_flag_getCallValue()
-        global_vars.clear_flag_getCaller()
-        global_vars.clear_flag_getExternalBalance()
+    #     global_vars.clear_flag_callDataCopy()
+    #     global_vars.clear_flag_getCallValue()
+    #     global_vars.clear_flag_getCaller()
+    #     global_vars.clear_flag_getExternalBalance()
 
-        flag_getCaller = 0
-        r = [r]
+    #     flag_getCaller = 0
+    #     r = [r]
     
     if global_vars.flag_getExternalBalance > 1 and flag_getExternalBalance:
         # 向栈顶压一个符号值
