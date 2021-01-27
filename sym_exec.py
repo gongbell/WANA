@@ -268,6 +268,9 @@ def fake_hostfunc_call(
     f: HostFunc = store.funcs[address]
     # frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
     valn = [stack.pop() for _ in f.functype.args][::-1]
+    val0 = []
+    print(valn)
+    # frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
     # [TODO] A good method for return value.
     if f.funcname:
         logger.printt(f'call eth.hostfunc : {f.funcname} {address}')
@@ -328,7 +331,7 @@ def fake_hostfunc_call(
                     # stack.add(Value.from_i64(tmp))
                 a += 8
             for item in list_v:
-                global_vars.add_dict_symbolic_address(item, (tmp, 0))
+                global_vars.add_dict_symbolic_address(item, tmp)
             # print(f'字典：{ global_vars.dict_symbolic_address}')
             # print(m.data[32:64])  
         elif f.funcname == 'storageStore':
@@ -383,7 +386,32 @@ def fake_hostfunc_call(
     elif f.funcname == 'callDelegate':
         r = global_vars.add_flag_num_host()
         r = utils.gen_symbolic_value(bin_format.i32, f'callDelegate_{r}')
-        print()
+        a = valn[2].n
+        b = valn[1].n
+        # print(f'address{a}')
+        for i in range(4):
+            # v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
+            # list_v.append(v)
+            # global_vars.add_num_storageLoad()
+            # m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+            # print(f'v.type:{type(v)}')
+            # if i == 0:
+            if utils.is_symbolic(m.data[a]):
+                tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+            else:
+                tmp_address = number.MemoryLoad.i64(m.data[a:a + 8])
+            if utils.is_symbolic(m.data[b]):
+                tmp_address1 = z3.simplify(number.MemoryLoad.i64(m.data[b:b + 8]))
+            else:
+                tmp_address1 = number.MemoryLoad.i64(m.data[b:b + 8])
+            print(tmp_address, tmp_address1)
+            # else:
+            #     if utils.is_symbolic(m.data[a]):
+            #         tmp_address += z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+            #     else:
+            #         tmp_address += number.MemoryLoad.i64(m.data[a:a + 8])
+            pass
+        print('ppp')
     elif f.funcname == 'getReturnDataSize':
         r = global_vars.add_flag_num_host()
         r = utils.gen_symbolic_value(bin_format.i32, f'getReturnDataSize_{r}')
@@ -530,6 +558,11 @@ def wasmfunc_call(
             logger.printt('mul right is symbolic')
             flag_mul = 2
             flag_skip = 1
+        if flag_mul > 0:
+            list_mul_symbolic = list()
+            for pos in range(8):
+                if utils.is_symbolic(frame.locals[pos].n):
+                    list_mul_symbolic.append(frame.locals[pos].n)
     elif func_name == '$div':
         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
             logger.printt('div left is symbolic')
@@ -569,6 +602,7 @@ def wasmfunc_call(
                 global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
 
             # 用于处理reentrancy
+            # [TODO] 将这一段拿在if flag！=1外面，这个也许是普适的
             list_lt_symbolic = list()
             for pos in range(8):
                 if utils.is_symbolic(frame.locals[pos].n):
@@ -589,7 +623,7 @@ def wasmfunc_call(
             #         global_vars.add_dict_block_solver(temp_symbolic, 1)
             #         flag_lt += 10
 
-        if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr':# or func_name == '$revert':
+        if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr' or func_name == '$mul':# or func_name == '$revert':
             logger.lvl = 0
             flag_not_print = 1
 
@@ -786,6 +820,8 @@ def wasmfunc_call(
         ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
         r = Value(bin_format.i64, ret)
         global_vars.add_num_div()
+        # [TODO] 这个暂时先不加了吧，日后再说
+        # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
 
         ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
@@ -799,8 +835,35 @@ def wasmfunc_call(
         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
         global_vars.add_num_div()
 
+        # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
+
         # print('finish div')
         flag_div = 0
+        r = [r]
+
+    if func_name == '$mul' and flag_mul:
+        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+        r = Value(bin_format.i64, ret)
+        global_vars.add_num_mul()        
+        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_mul()
+        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_mul()
+        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
+
+        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+        global_vars.add_num_mul()
+        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
+
+        # print('finish mul')
+        flag_mul = 0
         r = [r]
 
     if flag_keccak256 == 1:
@@ -1112,8 +1175,11 @@ def exec_expr(
                             # print(c,type(c),object_c,type(object_c))
                             logger.printt(f'recur {recur_depth}')
                             # print(path_condition)
+
                             solver.pop()
+                            # raise Exception('recur')
                             # 有时候返回数字0回栈顶不是个好的选择，如果if判断的栈顶元素是位向量，且内容为0，那么我们就返回它本身
+
                             return [object_c], global_vars.last_stack[-1]
                         return [], global_vars.last_stack[-1]
                     global_vars.last_stack.append(stack)

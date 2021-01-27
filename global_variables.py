@@ -119,8 +119,10 @@ class GlobalVariables:
         self.flag_call_mishandled_exception = 0
         self.call_symbolic_ret = dict()
 
-        # simulate $div
+        # simulate $div and $mul
         self.num_div = 0
+        self.num_mul = 0
+
 
         # simulate eth.storageLoad
         self.num_storageLoad = 0
@@ -310,6 +312,12 @@ class GlobalVariables:
 
     def clear_num_div(self) -> None:
         self.num_div = 0
+
+    def add_num_mul(self) -> None:
+        self.num_mul += 1
+
+    def clear_num_mul(self) -> None:
+        self.num_mul = 0
 
     def add_num_storageLoad(self) -> None:
         self.num_storageLoad += 1
