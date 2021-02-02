@@ -282,10 +282,18 @@ def fake_hostfunc_call(
             global_vars.add_flag_revert()
             logger.printt(f'eth.finish')
         elif f.funcname == 'callDataCopy': # or f.funcname == 'getCallValue':
-            if f.funcname == 'callDataCopy':
-                global_vars.add_flag_callDataCopy()
-            for j in range(32):
-                m.data[j] = randint(1, 9)
+            # if f.funcname == 'callDataCopy':
+            #     global_vars.add_flag_callDataCopy()
+            # for j in range(32):
+            #     m.data[j] = randint(1, 9)
+            address = valn[0].n
+            # [TODO] 真实模拟callDataCopy，比如设定好callDataCopy就好几个符号值，按照合约要的偏移量进行偏移设置等
+            for i in range(4):
+                v = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+                m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
+                global_vars.add_num_callDataCopy()
+                # list_v.append(v)
+                address += 8
         elif f.funcname == 'getCaller':
             address = valn[0].n
             # list_v = list()
@@ -413,8 +421,9 @@ def fake_hostfunc_call(
     elif f.funcname == 'callDelegate':
         r = global_vars.add_flag_num_host()
         r = utils.gen_symbolic_value(bin_format.i32, f'callDelegate_{r}')
-        a = valn[2].n
-        b = valn[1].n
+        a = valn[2].n # 数据内存地址
+        b = valn[1].n # 发送地址内存地址
+        l = valn[3].n
         # print(f'address{a}')
         for i in range(4):
             # v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
@@ -437,7 +446,20 @@ def fake_hostfunc_call(
             #         tmp_address += z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
             #     else:
             #         tmp_address += number.MemoryLoad.i64(m.data[a:a + 8])
+            if utils.is_symbolic(tmp_address):
+                print('find sym')
             pass
+        print(global_vars.dict_symbolic_address)
+        for item in global_vars.dict_symbolic_address:
+            # if a == global_vars.dict_symbolic_address[item]:
+                # print(a, item, 'find sym')
+            tmp = global_vars.dict_symbolic_address[item]
+            if isinstance(tmp, int):
+                print(a, global_vars.dict_symbolic_address[item])
+                l = max(l, 64)
+                if a <= tmp <= a + l:
+                    print(a, item, 'find sym')
+        print(m.data[0:160])
         print('ppp')
     elif f.funcname == 'getReturnDataSize':
         r = global_vars.add_flag_num_host()
@@ -463,7 +485,9 @@ def fake_hostfunc_call(
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
         global_vars.add_dict_block_solver(str(r), solver)
         # print(solver)
-
+    elif f.funcname == 'getExternalCodeSize':
+        r = randint(0,20)
+        r = utils.gen_symbolic_value(bin_format.i32, f'getExternalCodeSize_{r}')
 
     elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
@@ -1254,6 +1278,8 @@ def exec_expr(
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
                         path_condition = path_condition[:len_path_condition]
+                        recur_depth -= 1
+
 
                         # print('sum_pc:', global_vars.cur_sum_pc)
                         # print('行号', e.__traceback__.tb_lineno)
@@ -1338,11 +1364,14 @@ def exec_expr(
                         global_vars.list_func = global_vars.list_func[:len_list_func]
                         path_condition = path_condition[:len_path_condition]
                         print('行号', e.__traceback__.tb_lineno)
+                        recur_depth -= 1
+
                         # print('sum_pc:', global_vars.cur_sum_pc)
 
 
                     solver.pop()
                     if path_depth <= 0:
+                        # [TODO] delegate.LANDProxy.Proxy中，出现了path_depth<=0的情况，导致出错
                         print(f'path_depth <= 0')
                         temp_stack = Stack()
                         temp_stack.add(frame)
@@ -1869,7 +1898,9 @@ def exec_expr(
                     continue
                 if opcode == bin_format.i64_store:
                     m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                    print(m.data[a:a + 8])
+                    print(a, v, m.data[a:a + 8])
+                    if utils.is_symbolic(v):
+                        global_vars.add_dict_symbolic_address(v, a)
                     # print(a,v)
                     # print(number.MemoryStore.pack_i64(128))
                     continue
