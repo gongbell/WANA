@@ -144,7 +144,7 @@ class ModuleInstance:
         assert stack.len() == 0
         # z3.If the start function module.start is not empty, invoke the function instance.
         if module.start:
-            logger.debugln(f'Running start function {module.start}:')
+            logger.infoln(f'Running start function {module.start}:')
             call(self, module.start, store, stack)
 
     def allocate(
@@ -192,10 +192,10 @@ class ModuleInstance:
             exportinst = ExportInstance(export.name, externval)
             # set address of functions
             if export.name == 'apply' and export.kind == bin_format.extern_func:
-                logger.debugln('apply address:', export.desc)
+                logger.infoln('apply address:', export.desc)
                 global_vars.set_apply_function_addr(externval.addr)
             if export.name == 'main' and export.kind == bin_format.extern_func:
-                logger.debugln('main address:', export.desc)
+                logger.infoln('main address:', export.desc)
                 global_vars.set_main_function_addr(externval.addr)
             self.exports.append(exportinst)
 
@@ -266,52 +266,38 @@ def fake_hostfunc_call(
         result: the list of result, only one elem.
     """
     f: HostFunc = store.funcs[address]
-    # frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
     valn = [stack.pop() for _ in f.functype.args][::-1]
     val0 = []
-    print(valn)
-    # frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
     # [TODO] A good method for return value.
     if f.funcname:
-        logger.printt(f'call eth.hostfunc : {f.funcname} {address}')
+        logger.infoln(f'call eth.hostfunc : {f.funcname} {address}')
     if len(f.functype.rets) <= 0:
         if f.funcname == 'revert':
             global_vars.add_flag_revert()
-            logger.printt(f'eth.revert')
+            logger.infoln(f'eth.revert')
         if f.funcname == 'finish':
             global_vars.add_flag_revert()
-            logger.printt(f'eth.finish')
-        elif f.funcname == 'callDataCopy': # or f.funcname == 'getCallValue':
-            # if f.funcname == 'callDataCopy':
-            #     global_vars.add_flag_callDataCopy()
-            # for j in range(32):
-            #     m.data[j] = randint(1, 9)
+            logger.infoln(f'eth.finish')
+        elif f.funcname == 'callDataCopy':
             address = valn[0].n
             # [TODO] 真实模拟callDataCopy，比如设定好callDataCopy就好几个符号值，按照合约要的偏移量进行偏移设置等
             for i in range(4):
                 v = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
                 m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
                 global_vars.add_num_callDataCopy()
-                # list_v.append(v)
                 address += 8
         elif f.funcname == 'getCaller':
             address = valn[0].n
-            # list_v = list()
-            # tmp = int()
             for i in range(4):
                 # [TODO] 每次调用eth.caller，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
                 v = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
                 m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
                 global_vars.add_num_getCaller()
-                # list_v.append(v)
                 address += 8
             # [TODO]这个应该不需要加入符号表吧，比较仅仅是获取数据，没有特定路径，不可能被固化，不影响reentrancy的判断
-            # for item in list_v:
-            #     global_vars.add_dict_symbolic_address(item, tmp)
         elif f.funcname == 'getCallValue':
             address = valn[0].n
             if global_vars.flag_getCallValue_in_function:
-                print('sumilate getCallValue = 0')
                 for i in range(4):
                     # [TODO] 每次调用eth.getCallValue，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
                     v = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
@@ -321,63 +307,34 @@ def fake_hostfunc_call(
             else:
                 for i in range(32):
                     m.data[address + i] = 0
-
-            # 以下是老版
-            # global_vars.add_flag_getCallValue()                
-            # for j in range(32):
-            #     m.data[j] = 0
-            # print(m.data[:40])
-            # print(f'call eth.getCallValue flag: {global_vars.flag_getCallValue}')
-
         elif f.funcname == 'getExternalBalance':
             global_vars.add_flag_getExternalBalance()
         elif f.funcname == 'storageLoad':
             # [TODO] save symbolic to address of parameter
-            # print(m.data[32:64])  
-            # print(m.data[0:32])  
             a = 32
             list_v = list()
-            # tmp = int()
             for i in range(4):
                 v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
                 list_v.append(v)
                 global_vars.add_num_storageLoad()
                 m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                # print(f'v.type:{type(v)}')
                 if i == 0:
                     if utils.is_symbolic(m.data[a-32]):
-                        # print(f'{a-32}:{z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))}')
                         tmp = z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
                     else:
-                        # print(f'{a-32}:{number.MemoryLoad.i64(m.data[a-32:a + 8-32])}')
                         tmp = number.MemoryLoad.i64(m.data[a-32:a + 8-32])
                 else:
                     if utils.is_symbolic(m.data[a-32]):
-                        # print(f'{a-32}:{z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))}')
                         tmp += z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
                     else:
-                        # print(f'{a-32}:{number.MemoryLoad.i64(m.data[a-32:a + 8-32])}')
                         tmp += number.MemoryLoad.i64(m.data[a-32:a + 8-32])
-                # frame.locals[4].n
-                    #     tmp = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
-                    #     print(f'cccaaa{tmp}')
-                    # else:
-                    #     tmp = number.MemoryLoad.i64(m.data[a:a + 8])
-                    # stack.add(Value.from_i64(tmp))
                 a += 8
             for item in list_v:
                 global_vars.add_dict_symbolic_address(item, tmp)
-            # print(f'字典：{ global_vars.dict_symbolic_address}')
-            # print(m.data[32:64])  
         elif f.funcname == 'storageStore':
             a = 0
             list_value = list()
             for i in range(4):
-                # v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
-                # list_v.append(v)
-                # global_vars.add_num_storageLoad()
-                # m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                # print(f'v.type:{type(v)}')
                 if i == 0:
                     if utils.is_symbolic(m.data[a]):
                         tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
@@ -394,26 +351,17 @@ def fake_hostfunc_call(
                 else:
                     list_value.append(number.MemoryLoad.i64(m.data[a + 32:a + 32 + 8]))
                 a += 8
-            # print(f'list_value: {list_value}, address: {tmp_address}')
-            # print(f'之前字典：{global_vars.dict_symbolic_address}')
             # 如果eth.storageStore储存的值在符号表中，且该值的地址也对应上了，那么将其加入list_storageStore中，表示该符号值被eth.storageStore更新了
             for item in list_value:
                 if item in global_vars.dict_symbolic_address:
                     if global_vars.dict_symbolic_address[item] == tmp_address:
-                        # print(f'{global_vars.dict_symbolic_address[item]}')
                         global_vars.list_storageStore.append(item)
-                        # global_vars.dict_symbolic_address[item][tmp_address] = 1
                         # global_vars.dict_symbolic_address.pop(tmp_address) # 不用弹，只要改变其标记即可
-            # print(f'之后字典：{global_vars.dict_symbolic_address}')
-
         return []
     if f.funcname == 'getCallDataSize':
         global_vars.add_flag_getCallDataSize()
-        # print(global_vars.flag_getCallDataSize)
         if len(solver.units()) > 1:
-            # if it is twice call eth.getCallDataSize, return ranint(4,999)
             r = randint(68, 999)
-            # print(f'this is {global_vars.flag_getCallDataSize} time eth.getCallDataSize')
         else:
             r = utils.gen_symbolic_value(bin_format.i32, f'getCallDataSize_{global_vars.flag_getCallDataSize}')
     elif f.funcname == 'getGasLeft':
@@ -424,14 +372,7 @@ def fake_hostfunc_call(
         a = valn[2].n # 数据内存地址
         b = valn[1].n # 发送地址内存地址
         l = valn[3].n
-        # print(f'address{a}')
         for i in range(4):
-            # v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
-            # list_v.append(v)
-            # global_vars.add_num_storageLoad()
-            # m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-            # print(f'v.type:{type(v)}')
-            # if i == 0:
             if utils.is_symbolic(m.data[a]):
                 tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
             else:
@@ -440,27 +381,17 @@ def fake_hostfunc_call(
                 tmp_address1 = z3.simplify(number.MemoryLoad.i64(m.data[b:b + 8]))
             else:
                 tmp_address1 = number.MemoryLoad.i64(m.data[b:b + 8])
-            print(tmp_address, tmp_address1)
-            # else:
-            #     if utils.is_symbolic(m.data[a]):
-            #         tmp_address += z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
-            #     else:
-            #         tmp_address += number.MemoryLoad.i64(m.data[a:a + 8])
             if utils.is_symbolic(tmp_address):
+                # [TODO] update to bug_analyzer
                 print('find sym')
             pass
-        print(global_vars.dict_symbolic_address)
         for item in global_vars.dict_symbolic_address:
-            # if a == global_vars.dict_symbolic_address[item]:
-                # print(a, item, 'find sym')
             tmp = global_vars.dict_symbolic_address[item]
             if isinstance(tmp, int):
                 print(a, global_vars.dict_symbolic_address[item])
                 l = max(l, 64)
                 if a <= tmp <= a + l:
                     print(a, item, 'find sym')
-        print(m.data[0:160])
-        print('ppp')
     elif f.funcname == 'getReturnDataSize':
         r = global_vars.add_flag_num_host()
         r = utils.gen_symbolic_value(bin_format.i32, f'getReturnDataSize_{r}')
@@ -468,23 +399,18 @@ def fake_hostfunc_call(
         r = global_vars.add_flag_num_host()
         r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
-        logger.printt(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
-        # print(f'solver: {solver}')
-        # print(f'path_condition{path_condition}')
+        logger.infoln(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
         check_block_dependence_dynamic(solver)
         check_reentrancy_bug(path_condition, m, solver)
-        # print(solver)
         
     elif f.funcname == 'getBlockTimestamp':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockTimestamp_{r}')
         global_vars.add_dict_block_solver(str(r), solver)
-        # print(solver)
     elif f.funcname == 'getBlockNumber':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
         global_vars.add_dict_block_solver(str(r), solver)
-        # print(solver)
     elif f.funcname == 'getExternalCodeSize':
         r = randint(0,20)
         r = utils.gen_symbolic_value(bin_format.i32, f'getExternalCodeSize_{r}')
@@ -535,7 +461,7 @@ def wasmfunc_call(
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
         global_vars.list_func.append(f'{func_name} {address} -> ')
-        logger.printt(f'wasmfunc call: {global_vars.list_func} ')
+        logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
         # logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
         if func_name == '$mload_internal':
             # logger.lvl = 0
@@ -570,7 +496,7 @@ def wasmfunc_call(
 
     else:
         global_vars.list_func.append(f' {address} -> ')
-        logger.printt(f'wasmfunc call: {global_vars.list_func} ')
+        logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
         # print(f'wasmfunc call: {address}')
         pass
     
@@ -603,11 +529,11 @@ def wasmfunc_call(
                 flag_skip = 1
     elif func_name == '$mul':
         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            logger.printt('mul left is symbolic')
+            logger.infoln('mul left is symbolic')
             flag_mul = 1
             flag_skip = 1
         elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            logger.printt('mul right is symbolic')
+            logger.infoln('mul right is symbolic')
             flag_mul = 2
             flag_skip = 1
         if flag_mul > 0:
@@ -617,11 +543,11 @@ def wasmfunc_call(
                     list_mul_symbolic.append(frame.locals[pos].n)
     elif func_name == '$div':
         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            logger.printt('div left is symbolic')
+            logger.infoln('div left is symbolic')
             flag_div = 1
             flag_skip = 1
         elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            logger.printt('div right is symbolic')
+            logger.infoln('div right is symbolic')
             flag_div = 2
             flag_skip = 1
     elif func_name == '$bswap64':
@@ -638,13 +564,13 @@ def wasmfunc_call(
     if flag_skip != 1:
         if func_name == '$lt':
             if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-                logger.printt('lt left is symbolic')
+                logger.infoln('lt left is symbolic')
                 flag_lt = 1
             elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-                logger.printt('lt right is symbolic')
+                logger.infoln('lt right is symbolic')
                 flag_lt = 2
             elif utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[3].n):
-                logger.printt('lt left 1 and 3 are symbolic')
+                logger.infoln('lt left 1 and 3 are symbolic')
                 flag_lt = 3
             
             # 用于处理block信息进行比较的情况，直接给字典相应位置赋1
@@ -699,8 +625,8 @@ def wasmfunc_call(
     #     print(f'before return, dict:{global_vars.dict_symbolic_address}')
     #     global_vars.clear_dict_symbolic_address()
     #     print(f'after clear, dict:{global_vars.dict_symbolic_address}')
-    logger.printt(f'return func {tmp}')
-    logger.printt(f'{global_vars.list_func}')
+    logger.infoln(f'return func {tmp}')
+    logger.infoln(f'{global_vars.list_func}')
     
     flag_skip = 0
     if flag_not_print == 1:
@@ -1162,7 +1088,7 @@ def exec_expr(
 
         i = expr.data[pc]
 
-        logger.debugln(f'{str(i) :<18} {stack} {pc} {global_vars.cur_sum_pc}')
+        logger.infoln(f'{str(i) :<18} {stack} {pc} {global_vars.cur_sum_pc}')
         # log.println(f'{str(i):<18} {stack}')
 
         # accumulate the gas cost to detect expensive fallback
@@ -1215,8 +1141,8 @@ def exec_expr(
                     solver.add(c != 0)
                     find_symbolic_in_solver(solver)
                     check_mishandled_exception(solver, global_vars.cur_sum_pc)
-                    logger.printt(solver)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    logger.debugln(solver)
+                    logger.infoln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     len_list_func = len(global_vars.list_func)
                     len_path_condition = len(path_condition)
@@ -1225,7 +1151,7 @@ def exec_expr(
                         if utils.is_symbolic(c): #and c
                             # print(solver.check() == z3.unsat)
                             # print(c,type(c),object_c,type(object_c))
-                            logger.printt(f'recur {recur_depth}')
+                            logger.debugln(f'recur {recur_depth}')
                             # print(path_condition)
 
                             solver.pop()
@@ -1237,7 +1163,7 @@ def exec_expr(
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
                             # solver.pop()
                             # print(solver)
                             new_stack = copy.deepcopy(stack)
@@ -1259,7 +1185,7 @@ def exec_expr(
                             # print(f'before left branch, function length:{len(global_vars.list_func)} {path_condition}')
                             left_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
 
-                            logger.debugln(f'leave left branch{pc}')
+                            logger.infoln(f'leave left branch{pc}')
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
@@ -1272,9 +1198,9 @@ def exec_expr(
                             path_condition = path_condition[:len_path_condition]
                             # path_condition.pop()
                     except TimeoutError:
-                        logger.debugln('Timeout in path exploration.')
+                        logger.infoln('Timeout in path exploration.')
                     except Exception as e:
-                        logger.debugln(f'Exception: {e}')
+                        logger.infoln(f'Exception: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
                         path_condition = path_condition[:len_path_condition]
@@ -1313,11 +1239,11 @@ def exec_expr(
                     # print(f'right push {solver}')
                     solver.add(c == 0)
                     find_symbolic_in_solver(solver)
-                    logger.printt(solver)
-                    logger.debugln(f'right branch ({pc}: {i})')
+                    logger.debugln(solver)
+                    logger.infoln(f'right branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
                             # solver.pop()
                             # print(f'solver')
                             new_stack = stack
@@ -1337,8 +1263,8 @@ def exec_expr(
                             global_vars.sum_pc.append(global_vars.cur_sum_pc)
                             # print(f'before right branch, function length:{len(global_vars.list_func)} {path_condition}')
                             right_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
-                            logger.debugln(f'leave right branch {pc}')
-                            logger.printt(new_stack)
+                            logger.infoln(f'leave right branch {pc}')
+                            logger.debugln(new_stack)
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
@@ -1359,7 +1285,7 @@ def exec_expr(
                     except TimeoutError as e:
                         raise e
                     except Exception as e:
-                        logger.debugln(f'Exception1: {e}')
+                        logger.infoln(f'Exception1: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
                         path_condition = path_condition[:len_path_condition]
@@ -1387,7 +1313,7 @@ def exec_expr(
                     if isinstance(e, Label):
                         pc = e.continuation - 1
                         # print(stack)
-                        logger.printt(pc)
+                        logger.debugln(pc)
                         del stack.data[i]
                         break
                 continue
@@ -1430,7 +1356,7 @@ def exec_expr(
                     solver.push()
                     solver.add(c == 0)
                     find_symbolic_in_solver(solver)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    logger.infoln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
                         # print('return -> recur_depth > global_vars.BRANCH_DEPTH_LIMIT')
@@ -1438,7 +1364,7 @@ def exec_expr(
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
                             new_stack = stack
                         else:
                             # Execute the left branch
@@ -1466,17 +1392,17 @@ def exec_expr(
                     except TimeoutError:
                         raise
                     except Exception as e:
-                        logger.debugln('Exception')
+                        logger.infoln('Exception')
                     path_depth -= 1
                     solver.pop()
 
                     solver.push()
                     solver.add(c != 0)
                     find_symbolic_in_solver(solver)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    logger.infoln(f'left branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
                             new_stack = stack
                         else:
                             # Execute the right branch
@@ -1509,7 +1435,7 @@ def exec_expr(
                     except TimeoutError:
                         raise
                     except Exception as e:
-                        logger.debugln('Exception')
+                        logger.infoln('Exception')
 
                     solver.pop()
                     if path_depth <= 0:

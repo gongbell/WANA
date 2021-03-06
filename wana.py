@@ -24,6 +24,7 @@ from runtime import WasmFunc
 from bug_analyzer import locate_transfer, function_analysis, detect_fake_eos
 from bug_analyzer import fake_eos_analysis
 from bug_analyzer import count_instruction
+from emulator import function_map
 
 
 class Runtime:
@@ -76,7 +77,7 @@ class Runtime:
                     global_vars.add_get_call_value_addr(len(self.store.funcs))
                 if e.module in ('ethereum',) and e.name in ('revert',):
                     global_vars.add_revert_addr(len(self.store.funcs))
-                a = sym_exec.HostFunc(self.module.types[e.desc], None, e.name)
+                a = sym_exec.HostFunc(self.module.types[e.desc], function_map[e.module][e.name], e.name)
 
                 self.store.funcs.append(a)
                 externvals.append(sym_exec.ExternValue(e.kind, len(self.store.funcs) - 1))
@@ -126,7 +127,7 @@ class Runtime:
         """
         # Invoke a function denoted by the function address with the provided arguments.
         func_addr = self.func_addr(name)
-        logger.debugln(f'Running function {name}):')
+        logger.infoln(f'Running function {name}):')
         r = self.exec_by_address(func_addr, args)
         if r:
             return r
@@ -176,7 +177,7 @@ class Runtime:
             args[i] = sym_exec.Value(e, args[i])
         stack = sym_exec.Stack()
         stack.ext(args)
-        logger.debugln(f'Running function address {address}({", ".join([str(e) for e in args])}):')
+        logger.infoln(f'Running function address {address}({", ".join([str(e) for e in args])}):')
         r = sym_exec.call(self.module_instance, address, self.store, stack, init_constraints)
         if r:
             return r
@@ -186,7 +187,7 @@ class Runtime:
         """Executing all functions of the module.
         """
         for e in self.module_instance.exports:
-            logger.debugln(e.name, e.value.addr)
+            logger.infoln(e.name, e.value.addr)
             if e.value.extern_type == bin_format.extern_func:
                 try:
                     self.exec_by_address(e.value.addr, self._get_symbolic_params(e.value.addr))
@@ -342,7 +343,7 @@ def main():
         except FunctionTimedOut:
             logger.println(f'{args.execute}: time out')
         except Exception as e:
-            logger.debugln(traceback.format_exc())
+            logger.infoln(traceback.format_exc())
             logger.println(f'Error: {e}')
 
     # Execute all export functions of wasm
@@ -354,7 +355,7 @@ def main():
             except FunctionTimedOut:
                 logger.println(f'{contract_path}: time out')
             except Exception as e:
-                logger.debugln(traceback.format_exc())
+                logger.infoln(traceback.format_exc())
                 logger.println(f'Error: {e}')
 
     # Count the number of instruction
@@ -381,7 +382,7 @@ def execution_and_analyze(contract_path):
     try:
         global_vars.set_name_int64(name)
     except Exception as e:
-        logger.debugln(f'invalid contract name {name}: {e}')
+        logger.infoln(f'invalid contract name {name}: {e}')
 
     try:
         before_sym_exec(vm, name)
@@ -410,12 +411,8 @@ def after_sym_exec(name):
         logger.println(f'{name}: delegate call found')
     if global_vars.ethereum_greedy > 0:
         logger.println(f'{name}: greedy found')
-    else:
-        print("greedy not found")
     if len(global_vars.call_symbolic_ret) > 0:
         logger.println(f'{name}: mishandled exception found')
-    else:
-        print(f'{global_vars.call_symbolic_ret}')
     if global_vars.ethereum_reentrancy_detection > 0:
         logger.println(f'{name}: reentrancy found')
 

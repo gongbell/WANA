@@ -74,7 +74,7 @@ def locate_transfer(vm, name):
         except AssertionError as e:
             logger.println(f'unreachable transfer: {e}')
         except SystemExit as e:
-            logger.debugln(f'transfer found')
+            logger.infoln(f'transfer found')
     global_vars.sym_exec()
 
 
@@ -98,10 +98,8 @@ def function_analysis(vm) -> None:
         for index, func in enumerate(funcs):
             expr = func.expr
             for i, instr in enumerate(expr.data):
-                
                 if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
                         in global_vars.call_delegate_addr:
-                    
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
                         global_vars.find_ethereum_delegate_call()
         global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
@@ -109,9 +107,7 @@ def function_analysis(vm) -> None:
         check_block_dependence_static(vm)
 
 def detect_greedy(vm) -> None:
-    """Analysis function, it read the opcode and arguments of function 
-    and detect vulnerability of smart contract. The analysis result will 
-    be store in global varibles.
+    """This function is used to detect greedy vulnerabilities
 
     Args:
         vm: the virtual include env and structure.
@@ -126,7 +122,7 @@ def detect_greedy(vm) -> None:
         offset = len(vm.module.imports)
         main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
         exist_send_or_transfer = False
-        payable_function = 0 # 合约中的payable函数数
+        payable_function = 0 
         for index, func in enumerate(funcs):
             if exist_send_or_transfer:
                 break
@@ -162,7 +158,6 @@ def detect_greedy(vm) -> None:
             for i, instr in enumerate(expr.data):
                 if call_library_function(instr, global_vars.library_offset, '$call'):
                     exist_send_or_transfer = True 
-
                 non_payable_count += 1
                 is_payable = False
                     # break
@@ -170,17 +165,17 @@ def detect_greedy(vm) -> None:
                 global_vars.ETH_payable_function_address_set.add(index + offset)
         if not exist_send_or_transfer and payable_function:
             global_vars.ethereum_greedy = 1
-        # if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
-        #     global_vars.cannot_send_ETH = True
 
 def check_block_dependence_static(vm) -> None:
-    """[TODO]
+    """This function is used to detect block dependence vulnerabilities, 
+    This function uses static analysis of the instruction sequence to detect vulnerabilities
+
+    Args:
+        vm: the virtual include env and structure.
     """
     global library_function_dict
     funcs = vm.module.funcs
     # if the analyzed contract is ethereum
-    # 遍历所有函数，遍历每个函数的指令，不便利主函数，已经找到漏洞就跳出，遍历其余函数，但是不包括library
-    # 遍历其余函数中，如果发现了$number或$timestamp，则认为发现漏洞
     if global_vars.contract_type == 'ethereum':
         offset = len(vm.module.imports)
         main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
@@ -202,141 +197,69 @@ def check_block_dependence_static(vm) -> None:
             pass
 
 def find_symbolic_in_solver(solver:'solver'):
+    """This function is used to separate the symbol value from the solver, and add it in dict of global_vars 
+
+    Args:
+        solver: current z3 solver.
+    """
     list_solver = solver.units()
     r = str()
     for ret in global_vars.dict_block_solver:
         for l in list_solver:
-            print(f'find: {ret} {l} {type(ret)}')
             if str(l).find(str(ret)) != -1:
-                print(f'{ret} in solver')
                 r = ret
     if r:
-        print('already find')
-        print(f'{type(r)} {r}')
         global_vars.add_dict_block_solver(r, 1)
-        print('already end')
 
 def check_block_dependence_dynamic(solver:'solver'):
+    """This function is used to detect block dependence vulnerabilities, 
+
+    Args:
+        vm: the virtual include env and structure.
+    """
     if global_vars.dict_block_solver:
-        # print(global_vars.dict_block_solver)
         for ret in global_vars.dict_block_solver:
-            # print(len(global_vars.dict_block_solver[ret]))
             if len(global_vars.dict_block_solver[ret]) < 2:
                 continue
             if str(global_vars.dict_block_solver[ret][0]) == str(solver):
-                # print(f'find1 {ret} {str(solver)}')
                 global_vars.block_dependency_count += 1
                 global_vars.dict_block_solver.pop(ret)
                 break
                 
     else:
-        # print('empty')
         pass
 
-# def clear_dict_symbolic_address():
-
 def check_reentrancy_bug(path_condition:list, memory, solver):
-    print('开始检测reentrancy')
-    print(f'solver: {solver}')
-    print(f'path_condition: {path_condition}')
-    print(f'dict: {global_vars.dict_symbolic_address}')
+    """This function is used to detect reentrancy vulnerabilities, 
+
+    Args:
+        path_condition: current path condition
+        memory: current memory of Wasm
+        solver: current z3 solver
+    """
     list_solver = solver.units()
-    for expr in list_solver: # 也许不是path_condition, 而是 solver
-        if not z3.is_expr(expr): # 仅处理符号值
+    for expr in list_solver: 
+        if not z3.is_expr(expr): 
             continue
         vars = get_vars(expr)
-        print(f'vars: {vars}')
         flag_empty = 0
         for var in vars:
-            if var in global_vars.dict_symbolic_address: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
+            if var in global_vars.dict_symbolic_address: 
                 flag_empty += 1
-                print(f'var: {var}')
-                tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
+                tmp_dict = global_vars.find_dict_root(var)
                 if not tmp_dict:
                     continue
-                print(f'tmp_dict: {tmp_dict}')
                 for item in tmp_dict: 
-                # if len(global_vars.dict_symbolic_address[var]) > 1:
-                    print(f'item: {item}')
                     if item in global_vars.list_storageStore:
                         continue
                     else:
-                        print(f'没有固化{var}:{global_vars.dict_symbolic_address[var]}')
                         global_vars.find_reentrancy_detection()
         if flag_empty == 0:
-            print(f'根本没有用到自定义变量，过分！')
             global_vars.find_reentrancy_detection()
-                # tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
-                # if not tmp_dict:
-                #     continue
-                # print(f'tmp_dict: {tmp_dict}')
-                # for item in tmp_dict: 
-                    # print(f'item: {item}')
-                    # address = tmp_dict[item]
-                    # print(f'add{address} {type(address)}')
-                    # print(memory.data[address:address+8])
-                    # new_var = memory.data[address]
-                    # print(f'new_var: {new_var}')
-                    # new_var_2 = Value.from_i64(number.MemoryLoad.i64(memory.data[address:address+8]))
-                    # new_var_3 = number.MemoryLoad.i64(memory.data[address:address+8])
-                    # print(f'new_var_2: {new_var_2}')
-                    # print(f'new_var_3: {new_var_3}')
-                    # # 下一句比较的对象可能是newvar 或 newvar2
-                    # print(type(item), type(new_var_2), type(new_var_3))
-                    # new_path_condition.append(item == new_var_3)#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
-                    
-    pass
-
-def check_reentrancy_bug_old(path_condition:list, memory, solver):
-    # Detect Reentrancy Detection
-    # [TODO] 这里未考虑内存中i64，i32等的区别，这里参考的是i64
-    print(path_condition)
-    print(solver)
-    print(f'dict: {global_vars.dict_symbolic_address}')
-    list_solver = solver.units()
-    new_path_condition = list()
-    for expr in list_solver: # 也许不是path_condition, 而是 solver
-        if not z3.is_expr(expr): # 仅处理符号值
-            continue
-        vars = get_vars(expr)
-        print(f'vars: {vars}')
-        for var in vars:
-            if var in global_vars.dict_symbolic_address: #If var in memory_address_symbolic_variable, it means var在内存中有对应的值
-                print(f'var: {var}')
-                tmp_dict = global_vars.find_dict_root(var) # 取出memory_...表中对应var处的值pos，pos标识对应的内存地址起始地址
-                if not tmp_dict:
-                    continue
-                print(f'tmp_dict: {tmp_dict}')
-                for item in tmp_dict: 
-                    print(f'item: {item}')
-                    address = tmp_dict[item]
-                    print(f'add{address} {type(address)}')
-                    print(memory.data[address:address+8])
-                    new_var = memory.data[address]
-                    print(f'new_var: {new_var}')
-                    new_var_2 = Value.from_i64(number.MemoryLoad.i64(memory.data[address:address+8]))
-                    new_var_3 = number.MemoryLoad.i64(memory.data[address:address+8])
-                    print(f'new_var_2: {new_var_2}')
-                    print(f'new_var_3: {new_var_3}')
-                    # 下一句比较的对象可能是newvar 或 newvar2
-                    print(type(item), type(new_var_2), type(new_var_3))
-                    new_path_condition.append(item == new_var_3)#表达式指检测目前这个位置和刚开始定义的是不是同一个变量，并加这个每个约束 ??
-                    
-                    # if pos in global_state['Ia']:   #如果变量var对应的地址pos在global_state['Ia']中存在，那么就取出global_state['Ia']中对应地址的变量
-    solver.push()
-    print(f'before solver {solver}')
-    solver.add(new_path_condition)
-    print(f'after solver {solver}')
-    ret_val = (solver.check() == z3.sat)#检测一下是不是能够满足条件
-    print(ret_val)
-    if ret_val:# 如果有解，说明可以再次进入call
-        global_vars.find_reentrancy_detection()
-    solver.pop()
-    
-
 
 def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
     """Check whether the current instruction is *call* and whether its parameter is a specific library function
+
     Args:
         instr: the instruction now check
         library_offset: offset between simple functions and library functions 
@@ -351,6 +274,7 @@ def call_library_function(instr: structure.Instruction, library_offset: int, lib
 def check_function_payable(instrs:list) -> bool:
     """
     Check whether the function contains the keyword 'payable'
+
     Args:
         instrs: the instructions of function
     """
@@ -364,62 +288,6 @@ def check_function_payable(instrs:list) -> bool:
         if exist_callvalue and exist_revert:
             return False
     return True
-
-def function_analysis_old(vm) -> None:
-    """Analysis function, it read the opcode and arguments of function 
-    and detect vulnerability of smart contract. The analysis result will 
-    be store in global varibles.
-    暂时废弃
-    Args:
-        vm: the virtual include env and structure.
-    """
-
-    funcs = vm.module.funcs
-    # if the analyzed contract is ethereum
-    if global_vars.contract_type == 'ethereum':
-        # 1. Analyzing instruction sequentially.
-        # 2. If the current instruction is *call* and its argument is *ethereum.delegateCall*, then checking.
-        # 3. The parameters of ethereum.delegateCall are on stack, and the first parameter is
-        #    address to delegate call.
-        # 4. It is dangerous delegate call if the address is source from input.
-        for index, func in enumerate(funcs):
-            expr = func.expr
-            for i, instr in enumerate(expr.data):
-                
-                if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
-                        in global_vars.call_delegate_addr:
-                    if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
-                        global_vars.find_ethereum_delegate_call()
-
-        # 1. Count the non payable functions, finally get the number of payable functions.
-        # 2. If there are payable functions in the contract but no *ethereum.call*, greedy exists.
-        non_payable_count = 0
-        offset = len(vm.module.imports)
-        main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
-        for index, func in enumerate(funcs):
-            print(type(func))
-            if index == main_index:
-                continue
-            expr = func.expr
-            is_payable = True
-            for i, instr in enumerate(expr.data):
-                print("code:%x" %(instr.code))
-                
-                if (instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] in global_vars.get_call_value_addr):
-                    print(f"***************arguments:{instr.immediate_arguments} funcaddrs:{vm.module_instance.funcaddrs[instr.immediate_arguments]} is:{_is_non_payable_function(expr, i)} ")
-
-                # if (instr.code == bin_format.call and vm.module_instance.funcaddrs[
-                #     instr.immediate_arguments] in global_vars.get_call_value_addr
-                #         and _is_non_payable_function(expr, i)):
-                    non_payable_count += 1
-                    is_payable = False
-                    break
-            if is_payable:
-                global_vars.ETH_payable_function_address_set.add(index + offset)
-        print("non_payable_count:" + str(non_payable_count))
-        print(f'offset:{offset}  main-function_address:{global_vars.main_function_address}  vm.store.funcs:{len(vm.store.funcs)}  funcs:{len(funcs)} main_index:{main_index}')
-        if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
-            global_vars.cannot_send_ETH = True
 
 def check_block_dependence_old(block_number_flag: bool) -> None:
     """During symbolic execution, it is called when the 
@@ -447,27 +315,23 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
         global_vars.find_ethereum_delegate_call()
 
 def check_mishandled_exception(solver: 'solver', pc: int) -> None:
-    # print(f'now solver:{solver} new pc: {pc}')
+    """This function is used to detect mishandled exception
+
+    Args:
+        solver: current z3 solver
+        pc: current pc of all
+    """
     if len(global_vars.call_symbolic_ret) > 0:
         list_solver = solver.units()
         r = str()
         for ret in global_vars.call_symbolic_ret:
             if pc - global_vars.call_symbolic_ret[ret] > 300:
-                # [TODO] this 300 need to select more 仔细
-                # print(f'{pc} - {global_vars.call_symbolic_ret[ret]} > 300， break')
                 break
             for l in list_solver:
-                print(f'find: {ret} {l} {type(ret)}')
                 if str(l).find(ret) != -1:
-                    print(f'{ret} in solver')
                     r = ret
         if r:
-            # print(f'find {r}, mishandled--')
             global_vars.call_symbolic_ret.pop(r)
-
-
-
-
 
 def detect_forged_transfer(store, frame, index):
     """Forge transfer notification vulnerability analysis function, and it is called
