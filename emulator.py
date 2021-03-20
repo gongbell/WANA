@@ -1897,4 +1897,5 @@ realize_list_host = ['callDataCopy','storageStore','storageLoad','getCaller',
                 'getReturnDataSize', 'call', 'getBlockTimestamp',
                 'getBlockNumber', 'getExternalCodeSize', 'getExternalBalance']
 
-realize_list_wasm = ['$lt_320x320_64', '$lt_512x512_64', '$lt_256x256_64', '$bswap64', '$keccak256', '$eq', '$mul', '$div']
+realize_list_wasm = ['$lt_320x320_64', '$lt_512x512_64', '$lt_256x256_64', '$bswap64', 
+                '$keccak256', '$eq', '$mul', '$div']

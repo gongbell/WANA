@@ -345,49 +345,22 @@ def wasmfunc_call(
     """
     f: WasmFunc = store.funcs[address]
     code = f.code.expr.data
-    flag_callDataCopy = 0
-    flag_getCallValue = 0
-    flag_getCaller = 0
     flag_not_print = 0
-    flag_eq = 0
-    flag_lt = 0
-    flag_keccak256 = 0
-    flag_getExternalBalance = 0
-    flag_div = 0
     flag_skip = 0
     func_name = list()
-    flag_mul = 0
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
         global_vars.list_func.append(f'{func_name} {address} -> ')
         logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
 
-        if func_name == '$mload_internal':
-            global_vars.add_flag_callDataCopy()
-            global_vars.add_flag_getCallValue()
-            global_vars.add_flag_getCaller()
-            global_vars.add_flag_getExternalBalance()
-
-        elif func_name == '$mstore_internal':
-            pass
-        elif func_name == '$calldataload':
-            flag_callDataCopy = 1
-        elif func_name == '$callvalue':
+        if func_name == '$callvalue':
             if len(global_vars.list_func) > 2:
                 global_vars.flag_getCallValue_in_function = True
-            flag_getCallValue = 1
-
-        elif func_name == '$keccak256':
-            flag_keccak256 = 1
-            flag_skip = 1
-        elif func_name == '$balance':
-            flag_getExternalBalance = 1
 
     else:
         global_vars.list_func.append(f' {address} -> ')
         logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
         pass
-    
     
     valn = [stack.pop() for _ in f.functype.args][::-1]
     val0 = []
@@ -413,75 +386,8 @@ def wasmfunc_call(
             val0.append(Value.from_f64(0))
     
     frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
-    # if func_name == '$eq':
-    #     if global_vars.is_simple:
-    #         if utils.is_symbolic(frame.locals[0].n) or utils.is_symbolic(frame.locals[1].n) or utils.is_symbolic(frame.locals[2].n) or utils.is_symbolic(frame.locals[3].n):
-    #             flag_eq = 1
-    #             logger.lvl = 0
-    #             flag_not_print = 1
-    #             flag_skip = 1
-    #     else:
-    #         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-    #             flag_eq = 1
-    #             logger.lvl = 0
-    #             flag_not_print = 1
-    #             flag_skip = 1
-    # elif func_name == '$mul':
-    #     if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-    #         logger.infoln('mul left is symbolic')
-    #         flag_mul = 1
-    #         flag_skip = 1
-    #     elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-    #         logger.infoln('mul right is symbolic')
-    #         flag_mul = 2
-    #         flag_skip = 1
-    #     if flag_mul > 0:
-    #         list_mul_symbolic = list()
-    #         for pos in range(8):
-    #             if utils.is_symbolic(frame.locals[pos].n):
-    #                 list_mul_symbolic.append(frame.locals[pos].n)
-    # elif func_name == '$div':
-    #     if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-    #         logger.infoln('div left is symbolic')
-    #         flag_div = 1
-    #         flag_skip = 1
-    #     elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-    #         logger.infoln('div right is symbolic')
-    #         flag_div = 2
-    #         flag_skip = 1
-
-
 
     if flag_skip != 1:
-        if func_name == '$lt':
-            # if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            #     logger.infoln('lt left is symbolic')
-            #     flag_lt = 1
-            # elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            #     logger.infoln('lt right is symbolic')
-            #     flag_lt = 2
-            # elif utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[3].n):
-            #     logger.infoln('lt left 1 and 3 are symbolic')
-            #     flag_lt = 3
-            
-            # # 用于处理block信息进行比较的情况，直接给字典相应位置赋1
-            # if utils.is_symbolic(frame.locals[3].n) and str(frame.locals[3].n) in global_vars.dict_block_solver:
-            #     global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
-            # elif utils.is_symbolic(frame.locals[7].n) and str(frame.locals[7].n) in global_vars.dict_block_solver:
-            #     global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
-
-            # # 用于处理reentrancy
-            # # [TODO] 将这一段拿在if flag！=1外面，这个也许是普适的
-            # list_lt_symbolic = list()
-            # for pos in range(8):
-            #     if utils.is_symbolic(frame.locals[pos].n):
-            #         list_lt_symbolic.append(frame.locals[pos].n)
-
-            # logger.lvl = 0
-            # flag_not_print = 1
-            pass
-
-
         stack.add(frame)
         stack.add(Label(len(f.functype.rets), len(code)))
         # An expression is evaluated relative to a current frame pointing to its containing module instance.
@@ -505,139 +411,6 @@ def wasmfunc_call(
     if flag_not_print == 1:
         flag_not_print = 0
         logger.lvl = global_vars.lvl
-
-
-    if global_vars.flag_callDataCopy > 1 and flag_callDataCopy:
-        # 向栈顶压一个符号值
-        if global_vars.is_simple:
-            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-            r = Value(bin_format.i64, ret)
-            store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, 0), True)
-            global_vars.add_num_callDataCopy()
-            global_vars.add_num_callDataCopy()
-            global_vars.add_num_callDataCopy()
-            global_vars.add_num_callDataCopy()
-        else:
-            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-            r = Value(bin_format.i64, ret)
-            global_vars.add_num_callDataCopy()
-
-            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-            store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_callDataCopy()
-
-            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-            store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_callDataCopy()
-
-            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-            store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-            global_vars.add_num_callDataCopy()
-        #[TODO] num_callDataCopy清零的函数没有调用
-
-        global_vars.clear_flag_callDataCopy()
-        global_vars.clear_flag_getCallValue()
-        global_vars.clear_flag_getCaller()
-        global_vars.clear_flag_getExternalBalance()
-
-        flag_callDataCopy = 0
-        r = [r]
-    
-    # if global_vars.flag_getExternalBalance > 1 and flag_getExternalBalance:
-    #     # 向栈顶压一个符号值
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-    #     r = Value(bin_format.i64, ret)
-    #     global_vars.add_num_getExternalBalance()
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getExternalBalance()
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getExternalBalance()
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getExternalBalance()
-    #     #[TODO] num_callDataCopy清零的函数没有调用
-
-    #     global_vars.clear_flag_callDataCopy()
-    #     global_vars.clear_flag_getCallValue()
-    #     global_vars.clear_flag_getCaller()
-    #     global_vars.clear_flag_getExternalBalance()
-
-    #     flag_getExternalBalance = 0
-    #     r = [r]
-
-    # if func_name == '$eq' and flag_eq == 1:
-    #     flag_eq = 0
-    #     r = Value.from_i64(0)
-    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'eq_{global_vars.add_flag_num_wasm()}')
-    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     r = [r]
-
-    # if func_name == '$lt' and flag_lt:
-    #     print(flag_lt)
-    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'lt_{global_vars.add_flag_num_wasm()}')
-    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-
-    #     global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
-    #     flag_lt = 0
-    #     r = Value.from_i64(0)
-    #     r = [r]
-
-    # if func_name == '$div' and flag_div:
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-    #     r = Value(bin_format.i64, ret)
-    #     global_vars.add_num_div()
-    #     # [TODO] 这个暂时先不加了吧，日后再说
-    #     # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_div()
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_div()
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_div()
-
-    #     flag_div = 0
-    #     r = [r]
-
-    # if func_name == '$mul' and flag_mul:
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-    #     r = Value(bin_format.i64, ret)
-    #     global_vars.add_num_mul()        
-    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_mul()
-    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_mul()
-    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_mul()
-    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-    #     flag_mul = 0
-    #     r = [r]
 
     stack.data[:] = new_stack.data
     return r
