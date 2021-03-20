@@ -12,6 +12,7 @@ from random import randint, uniform
 from z3.z3util import get_vars
 from collections import defaultdict
 
+import emulator
 import logger
 import number
 from global_variables import global_vars
@@ -23,8 +24,6 @@ from bug_analyzer import check_mishandled_exception
 from runtime import *
 from bug_analyzer import library_function_dict
 from bug_analyzer import find_symbolic_in_solver
-from bug_analyzer import check_block_dependence_dynamic
-from bug_analyzer import check_reentrancy_bug
 import pprint
 
 
@@ -245,7 +244,7 @@ def hostfunc_call(
     return [Value(f.functype.rets[0], r)]
 
 
-def fake_hostfunc_call(
+def fake_hostfunc_call_old(
         _: ModuleInstance,
         address: int,
         store: Store,
@@ -272,149 +271,9 @@ def fake_hostfunc_call(
     if f.funcname:
         logger.infoln(f'call eth.hostfunc : {f.funcname} {address}')
     if len(f.functype.rets) <= 0:
-        if f.funcname == 'revert':
-            global_vars.add_flag_revert()
-            logger.infoln(f'eth.revert')
-        if f.funcname == 'finish':
-            global_vars.add_flag_revert()
-            logger.infoln(f'eth.finish')
-        elif f.funcname == 'callDataCopy':
-            address = valn[0].n
-            # [TODO] 真实模拟callDataCopy，比如设定好callDataCopy就好几个符号值，按照合约要的偏移量进行偏移设置等
-            for i in range(4):
-                v = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
-                m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
-                global_vars.add_num_callDataCopy()
-                address += 8
-        elif f.funcname == 'getCaller':
-            address = valn[0].n
-            for i in range(4):
-                # [TODO] 每次调用eth.caller，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
-                v = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
-                m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
-                global_vars.add_num_getCaller()
-                address += 8
-            # [TODO]这个应该不需要加入符号表吧，比较仅仅是获取数据，没有特定路径，不可能被固化，不影响reentrancy的判断
-        elif f.funcname == 'getCallValue':
-            address = valn[0].n
-            if global_vars.flag_getCallValue_in_function:
-                for i in range(4):
-                    # [TODO] 每次调用eth.getCallValue，其结果不应该是相同的吗，需要后缀数字变化吗,当前版本是变化的，后续可能改成不变化的
-                    v = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-                    m.data[address:address + 8] = number.MemoryStore.pack_i64(v)
-                    global_vars.add_num_getCallValue()
-                    address += 8
-            else:
-                for i in range(32):
-                    m.data[address + i] = 0
-        elif f.funcname == 'getExternalBalance':
+        if f.funcname == 'getExternalBalance':
             global_vars.add_flag_getExternalBalance()
-        elif f.funcname == 'storageLoad':
-            # [TODO] save symbolic to address of parameter
-            a = 32
-            list_v = list()
-            for i in range(4):
-                v = utils.gen_symbolic_value(bin_format.i64, f'storageLoad_{global_vars.num_storageLoad}')
-                list_v.append(v)
-                global_vars.add_num_storageLoad()
-                m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                if i == 0:
-                    if utils.is_symbolic(m.data[a-32]):
-                        tmp = z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
-                    else:
-                        tmp = number.MemoryLoad.i64(m.data[a-32:a + 8-32])
-                else:
-                    if utils.is_symbolic(m.data[a-32]):
-                        tmp += z3.simplify(number.MemoryLoad.i64(m.data[a-32:a + 8-32]))
-                    else:
-                        tmp += number.MemoryLoad.i64(m.data[a-32:a + 8-32])
-                a += 8
-            for item in list_v:
-                global_vars.add_dict_symbolic_address(item, tmp)
-        elif f.funcname == 'storageStore':
-            a = 0
-            list_value = list()
-            for i in range(4):
-                if i == 0:
-                    if utils.is_symbolic(m.data[a]):
-                        tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
-                    else:
-                        tmp_address = number.MemoryLoad.i64(m.data[a:a + 8])
-                else:
-                    if utils.is_symbolic(m.data[a]):
-                        tmp_address += z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
-                    else:
-                        tmp_address += number.MemoryLoad.i64(m.data[a:a + 8])
-
-                if utils.is_symbolic(m.data[a + 32]):
-                    list_value.append(z3.simplify(number.MemoryLoad.i64(m.data[a + 32:a + 32 + 8])))
-                else:
-                    list_value.append(number.MemoryLoad.i64(m.data[a + 32:a + 32 + 8]))
-                a += 8
-            # 如果eth.storageStore储存的值在符号表中，且该值的地址也对应上了，那么将其加入list_storageStore中，表示该符号值被eth.storageStore更新了
-            for item in list_value:
-                if item in global_vars.dict_symbolic_address:
-                    if global_vars.dict_symbolic_address[item] == tmp_address:
-                        global_vars.list_storageStore.append(item)
-                        # global_vars.dict_symbolic_address.pop(tmp_address) # 不用弹，只要改变其标记即可
         return []
-    if f.funcname == 'getCallDataSize':
-        global_vars.add_flag_getCallDataSize()
-        if len(solver.units()) > 1:
-            r = randint(68, 999)
-        else:
-            r = utils.gen_symbolic_value(bin_format.i32, f'getCallDataSize_{global_vars.flag_getCallDataSize}')
-    elif f.funcname == 'getGasLeft':
-        r = utils.gen_symbolic_value(bin_format.i64, f'getGasLeft')
-    elif f.funcname == 'callDelegate':
-        r = global_vars.add_flag_num_host()
-        r = utils.gen_symbolic_value(bin_format.i32, f'callDelegate_{r}')
-        a = valn[2].n # 数据内存地址
-        b = valn[1].n # 发送地址内存地址
-        l = valn[3].n
-        for i in range(4):
-            if utils.is_symbolic(m.data[a]):
-                tmp_address = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
-            else:
-                tmp_address = number.MemoryLoad.i64(m.data[a:a + 8])
-            if utils.is_symbolic(m.data[b]):
-                tmp_address1 = z3.simplify(number.MemoryLoad.i64(m.data[b:b + 8]))
-            else:
-                tmp_address1 = number.MemoryLoad.i64(m.data[b:b + 8])
-            if utils.is_symbolic(tmp_address):
-                # [TODO] update to bug_analyzer
-                print('find sym')
-            pass
-        for item in global_vars.dict_symbolic_address:
-            tmp = global_vars.dict_symbolic_address[item]
-            if isinstance(tmp, int):
-                print(a, global_vars.dict_symbolic_address[item])
-                l = max(l, 64)
-                if a <= tmp <= a + l:
-                    print(a, item, 'find sym')
-    elif f.funcname == 'getReturnDataSize':
-        r = global_vars.add_flag_num_host()
-        r = utils.gen_symbolic_value(bin_format.i32, f'getReturnDataSize_{r}')
-    elif f.funcname == 'call':
-        r = global_vars.add_flag_num_host()
-        r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
-        global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
-        logger.infoln(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
-        check_block_dependence_dynamic(solver)
-        check_reentrancy_bug(path_condition, m, solver)
-        
-    elif f.funcname == 'getBlockTimestamp':
-        r = randint(0,20)
-        r = utils.gen_symbolic_value(bin_format.i64, f'getBlockTimestamp_{r}')
-        global_vars.add_dict_block_solver(str(r), solver)
-    elif f.funcname == 'getBlockNumber':
-        r = randint(0,20)
-        r = utils.gen_symbolic_value(bin_format.i64, f'getBlockNumber_{r}')
-        global_vars.add_dict_block_solver(str(r), solver)
-    elif f.funcname == 'getExternalCodeSize':
-        r = randint(0,20)
-        r = utils.gen_symbolic_value(bin_format.i32, f'getExternalCodeSize_{r}')
-
     elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
     elif f.functype.rets[0] == bin_format.i64:
@@ -425,6 +284,47 @@ def fake_hostfunc_call(
         r = uniform(0, 1)
     return [Value(f.functype.rets[0], r)]
 
+def fake_hostfunc_call(
+        _: ModuleInstance,
+        address: int,
+        store: Store,
+        stack: Stack,
+        memory: list
+):  
+    """When the lib function is not exist, the hostfunc_call will crash, so the
+    fake_hostfunc_call is useful because the analysis tool could not get the lib
+    function.
+
+    Args:
+        _: deprecated parameter.
+        address: the address of function.
+        store: store the functions.
+        stack: the current stack.
+
+    Returns:
+        result: the list of result, only one elem.
+    """
+    f: HostFunc = store.funcs[address]
+    valn = [stack.pop() for _ in f.functype.args][::-1]
+    val0 = []
+    if f.funcname:
+        logger.infoln(f'call eth.hostfunc : {f.funcname} {address}')
+    if f.funcname in emulator.realize_list_host:
+        # [TODO] Pass different parameters according to the situation
+        r = f.hostcode(valn, solver, memory)
+        if type(r) == list:
+            return []
+    elif len(f.functype.rets) <= 0:
+        return []
+    elif f.functype.rets[0] == bin_format.i32:
+        r = randint(0, 0)
+    elif f.functype.rets[0] == bin_format.i64:
+        r = randint(0, 0)
+    elif f.functype.rets[0] == bin_format.f32:
+        r = uniform(0, 1)
+    else:
+        r = uniform(0, 1)
+    return [Value(f.functype.rets[0], r)]
 
 def wasmfunc_call(
         module: ModuleInstance,
@@ -456,38 +356,27 @@ def wasmfunc_call(
     flag_div = 0
     flag_skip = 0
     func_name = list()
-    flag_bswap64 = 0
     flag_mul = 0
     if address - global_vars.library_offset > 32:
         func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
         global_vars.list_func.append(f'{func_name} {address} -> ')
         logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
-        # logger.printt(f'wasmfunc call: {func_name} {address} {global_vars.library_offset}')
+
         if func_name == '$mload_internal':
-            # logger.lvl = 0
-            # flag_not_print = 1
-            # print('$mload_internal: stop print')
             global_vars.add_flag_callDataCopy()
             global_vars.add_flag_getCallValue()
             global_vars.add_flag_getCaller()
             global_vars.add_flag_getExternalBalance()
 
         elif func_name == '$mstore_internal':
-            # logger.lvl = 0
-            # flag_not_print = 1
-            # print('$mstore_internal: stop print')
             pass
         elif func_name == '$calldataload':
             flag_callDataCopy = 1
         elif func_name == '$callvalue':
             if len(global_vars.list_func) > 2:
                 global_vars.flag_getCallValue_in_function = True
-                # print(f'{len(global_vars.list_func)} true')
             flag_getCallValue = 1
-            # print(global_vars.flag_getCallValue, flag_getCallValue)
-        # elif func_name == '$caller':
-        #     flag_getCaller = 1
-        #     # print(f'flag {flag_getCaller}')
+
         elif func_name == '$keccak256':
             flag_keccak256 = 1
             flag_skip = 1
@@ -497,12 +386,22 @@ def wasmfunc_call(
     else:
         global_vars.list_func.append(f' {address} -> ')
         logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
-        # print(f'wasmfunc call: {address}')
         pass
     
     
     valn = [stack.pop() for _ in f.functype.args][::-1]
     val0 = []
+
+    if func_name in emulator.realize_list_wasm:
+        r = emulator.wasmfunc_map['ethereum'][func_name](valn, solver, store)
+        if r:
+            flag_skip = 1
+            if len(r) == 4:
+                store.globals[module.globaladdrs[0]] = r[1]
+                store.globals[module.globaladdrs[1]] = r[2]
+                store.globals[module.globaladdrs[2]] = r[3]
+                r = [r[0]]
+
     for e in f.code.locals:
         if e == bin_format.i32:
             val0.append(Value.from_i32(0))
@@ -514,102 +413,79 @@ def wasmfunc_call(
             val0.append(Value.from_f64(0))
     
     frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
-    if func_name == '$eq':
-        if global_vars.is_simple:
-            if utils.is_symbolic(frame.locals[0].n) or utils.is_symbolic(frame.locals[1].n) or utils.is_symbolic(frame.locals[2].n) or utils.is_symbolic(frame.locals[3].n):
-                flag_eq = 1
-                logger.lvl = 0
-                flag_not_print = 1
-                flag_skip = 1
-        else:
-            if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-                flag_eq = 1
-                logger.lvl = 0
-                flag_not_print = 1
-                flag_skip = 1
-    elif func_name == '$mul':
-        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            logger.infoln('mul left is symbolic')
-            flag_mul = 1
-            flag_skip = 1
-        elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            logger.infoln('mul right is symbolic')
-            flag_mul = 2
-            flag_skip = 1
-        if flag_mul > 0:
-            list_mul_symbolic = list()
-            for pos in range(8):
-                if utils.is_symbolic(frame.locals[pos].n):
-                    list_mul_symbolic.append(frame.locals[pos].n)
-    elif func_name == '$div':
-        if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            logger.infoln('div left is symbolic')
-            flag_div = 1
-            flag_skip = 1
-        elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-            logger.infoln('div right is symbolic')
-            flag_div = 2
-            flag_skip = 1
-    elif func_name == '$bswap64':
-        # [TODO] better to sumilate this func, maybe z3.solver can do it?
-        if utils.is_symbolic(frame.locals[0].n):
-            # print(f'ccc{frame.locals[0].n}')
-            flag_bswap64 = 1
-            flag_skip = 1
-            pass
-        else:
-            logger.lvl = 0
-            flag_not_print = 1
+    # if func_name == '$eq':
+    #     if global_vars.is_simple:
+    #         if utils.is_symbolic(frame.locals[0].n) or utils.is_symbolic(frame.locals[1].n) or utils.is_symbolic(frame.locals[2].n) or utils.is_symbolic(frame.locals[3].n):
+    #             flag_eq = 1
+    #             logger.lvl = 0
+    #             flag_not_print = 1
+    #             flag_skip = 1
+    #     else:
+    #         if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+    #             flag_eq = 1
+    #             logger.lvl = 0
+    #             flag_not_print = 1
+    #             flag_skip = 1
+    # elif func_name == '$mul':
+    #     if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+    #         logger.infoln('mul left is symbolic')
+    #         flag_mul = 1
+    #         flag_skip = 1
+    #     elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+    #         logger.infoln('mul right is symbolic')
+    #         flag_mul = 2
+    #         flag_skip = 1
+    #     if flag_mul > 0:
+    #         list_mul_symbolic = list()
+    #         for pos in range(8):
+    #             if utils.is_symbolic(frame.locals[pos].n):
+    #                 list_mul_symbolic.append(frame.locals[pos].n)
+    # elif func_name == '$div':
+    #     if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+    #         logger.infoln('div left is symbolic')
+    #         flag_div = 1
+    #         flag_skip = 1
+    #     elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+    #         logger.infoln('div right is symbolic')
+    #         flag_div = 2
+    #         flag_skip = 1
+
+
 
     if flag_skip != 1:
         if func_name == '$lt':
-            if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-                logger.infoln('lt left is symbolic')
-                flag_lt = 1
-            elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
-                logger.infoln('lt right is symbolic')
-                flag_lt = 2
-            elif utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[3].n):
-                logger.infoln('lt left 1 and 3 are symbolic')
-                flag_lt = 3
-            
-            # 用于处理block信息进行比较的情况，直接给字典相应位置赋1
-            if utils.is_symbolic(frame.locals[3].n) and str(frame.locals[3].n) in global_vars.dict_block_solver:
-                global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
-            elif utils.is_symbolic(frame.locals[7].n) and str(frame.locals[7].n) in global_vars.dict_block_solver:
-                global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
-
-            # 用于处理reentrancy
-            # [TODO] 将这一段拿在if flag！=1外面，这个也许是普适的
-            list_lt_symbolic = list()
-            for pos in range(8):
-                if utils.is_symbolic(frame.locals[pos].n):
-                    list_lt_symbolic.append(frame.locals[pos].n)
-            # print(f'lt对应的符号值 {list_lt_symbolic}')
-                # print(global_vars.dict_block_solver)
-                # print(str(frame.locals[3].n))
-                # print(str(frame.locals[3].n) in global_vars.dict_block_solver)
-            
-            # elif utils.is_all_real(frame.locals[0].n) and utils.is_all_real(frame.locals[1].n) and utils.is_all_real(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
-            #     logger.printt('4th is symbolic')
-            #     temp_symbolic = str(frame.locals[3].n)
+            # if utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[1].n) and utils.is_symbolic(frame.locals[2].n) and utils.is_symbolic(frame.locals[3].n):
+            #     logger.infoln('lt left is symbolic')
+            #     flag_lt = 1
+            # elif utils.is_symbolic(frame.locals[4].n) and utils.is_symbolic(frame.locals[5].n) and utils.is_symbolic(frame.locals[6].n) and utils.is_symbolic(frame.locals[7].n):
+            #     logger.infoln('lt right is symbolic')
+            #     flag_lt = 2
+            # elif utils.is_symbolic(frame.locals[0].n) and utils.is_symbolic(frame.locals[3].n):
+            #     logger.infoln('lt left 1 and 3 are symbolic')
             #     flag_lt = 3
-            logger.lvl = 0
-            flag_not_print = 1
-            # if temp_symbolic:
-            #     if temp_symbolic.startswith('getBlockNumber') or temp_symbolic.startswith('getBlockTimestamp'):
-            #         global_vars.add_dict_block_solver(temp_symbolic, 1)
-            #         flag_lt += 10
+            
+            # # 用于处理block信息进行比较的情况，直接给字典相应位置赋1
+            # if utils.is_symbolic(frame.locals[3].n) and str(frame.locals[3].n) in global_vars.dict_block_solver:
+            #     global_vars.add_dict_block_solver(str(frame.locals[3].n), 1)
+            # elif utils.is_symbolic(frame.locals[7].n) and str(frame.locals[7].n) in global_vars.dict_block_solver:
+            #     global_vars.add_dict_block_solver(str(frame.locals[7].n), 1)
 
-        if func_name == '$add' or func_name == '$iszero' or func_name == '$mstore' or func_name == '$sub' or func_name == '$shr' or func_name == '$mul':# or func_name == '$revert':
-            logger.lvl = 0
-            flag_not_print = 1
+            # # 用于处理reentrancy
+            # # [TODO] 将这一段拿在if flag！=1外面，这个也许是普适的
+            # list_lt_symbolic = list()
+            # for pos in range(8):
+            #     if utils.is_symbolic(frame.locals[pos].n):
+            #         list_lt_symbolic.append(frame.locals[pos].n)
+
+            # logger.lvl = 0
+            # flag_not_print = 1
+            pass
+
 
         stack.add(frame)
         stack.add(Label(len(f.functype.rets), len(code)))
         # An expression is evaluated relative to a current frame pointing to its containing module instance.
         r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
-        # print(f'if {new_stack}')
 
         # Exit
         while not isinstance(new_stack.pop(), Frame):
@@ -617,14 +493,11 @@ def wasmfunc_call(
                 raise Exception('Signature mismatch in call!')
     else:
         # r需要仔细斟酌
-        # print(f'else:{stack}')
+
         new_stack = stack
         
     tmp = global_vars.list_func.pop()
-    # if len(global_vars.list_func) < 3:
-    #     print(f'before return, dict:{global_vars.dict_symbolic_address}')
-    #     global_vars.clear_dict_symbolic_address()
-    #     print(f'after clear, dict:{global_vars.dict_symbolic_address}')
+
     logger.infoln(f'return func {tmp}')
     logger.infoln(f'{global_vars.list_func}')
     
@@ -634,7 +507,6 @@ def wasmfunc_call(
         logger.lvl = global_vars.lvl
 
 
-        # print('$mload_internal or $mstore_internal: resume print')
     if global_vars.flag_callDataCopy > 1 and flag_callDataCopy:
         # 向栈顶压一个符号值
         if global_vars.is_simple:
@@ -672,62 +544,24 @@ def wasmfunc_call(
 
         flag_callDataCopy = 0
         r = [r]
-        # return [r]
-        # simulate eth.getCallValue
-    # if global_vars.flag_getCallValue > 1 and flag_getCallValue:
-    #     # print(f'eth.getCallValue -> mload_internal return flag:{global_vars.flag_getCallValue} {flag_getCallValue}')
-    #     # print(global_vars.flag_getCallValue_in_function)
-    #     if global_vars.flag_getCallValue_in_function:
-    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-    #         r = Value(bin_format.i64, ret)
-    #         global_vars.add_num_getCallValue()
-
-    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-    #         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #         global_vars.add_num_getCallValue()
-
-    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-    #         store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #         global_vars.add_num_getCallValue()
-
-    #         ret = utils.gen_symbolic_value(bin_format.i64, f'getCallValue_{global_vars.num_getCallValue}')
-    #         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #         global_vars.add_num_getCallValue()
-    #         global_vars.change_flag_getCallValue_in_function()
-    #         r = [r]
-    #         logger.printt(f'$getCallvalue -> symbolic {global_vars.num_getCallValue-4}~{global_vars.num_getCallValue}')
-    #     else:
-    #         r = Value.from_i64(0)
-    #         store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #         store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #         store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, 0), True)
-    #         r = [r]
-    #         logger.printt(f'$getCallvalue -> real 0')
-
-    #     global_vars.clear_flag_callDataCopy()
-    #     global_vars.clear_flag_getCallValue()
-    #     global_vars.clear_flag_getCaller()
-    #     global_vars.clear_flag_getExternalBalance()
-
-    #     flag_getCallValue = 0
-
-    # if global_vars.flag_getCaller > 1 and flag_getCaller:
+    
+    # if global_vars.flag_getExternalBalance > 1 and flag_getExternalBalance:
     #     # 向栈顶压一个符号值
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
     #     r = Value(bin_format.i64, ret)
-    #     global_vars.add_num_getCaller()
+    #     global_vars.add_num_getExternalBalance()
 
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
     #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getCaller()
+    #     global_vars.add_num_getExternalBalance()
 
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
     #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getCaller()
+    #     global_vars.add_num_getExternalBalance()
 
-    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getCaller_{global_vars.num_getCaller}')
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
     #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-    #     global_vars.add_num_getCaller()
+    #     global_vars.add_num_getExternalBalance()
     #     #[TODO] num_callDataCopy清零的函数没有调用
 
     #     global_vars.clear_flag_callDataCopy()
@@ -735,155 +569,77 @@ def wasmfunc_call(
     #     global_vars.clear_flag_getCaller()
     #     global_vars.clear_flag_getExternalBalance()
 
-    #     flag_getCaller = 0
+    #     flag_getExternalBalance = 0
     #     r = [r]
-    
-    if global_vars.flag_getExternalBalance > 1 and flag_getExternalBalance:
-        # 向栈顶压一个符号值
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-        r = Value(bin_format.i64, ret)
-        global_vars.add_num_getExternalBalance()
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getExternalBalance()
+    # if func_name == '$eq' and flag_eq == 1:
+    #     flag_eq = 0
+    #     r = Value.from_i64(0)
+    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'eq_{global_vars.add_flag_num_wasm()}')
+    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     r = [r]
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getExternalBalance()
+    # if func_name == '$lt' and flag_lt:
+    #     print(flag_lt)
+    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'lt_{global_vars.add_flag_num_wasm()}')
+    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'getExternalBalance_{global_vars.num_getExternalBalance}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_getExternalBalance()
-        #[TODO] num_callDataCopy清零的函数没有调用
+    #     global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
+    #     flag_lt = 0
+    #     r = Value.from_i64(0)
+    #     r = [r]
 
-        global_vars.clear_flag_callDataCopy()
-        global_vars.clear_flag_getCallValue()
-        global_vars.clear_flag_getCaller()
-        global_vars.clear_flag_getExternalBalance()
+    # if func_name == '$div' and flag_div:
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
+    #     r = Value(bin_format.i64, ret)
+    #     global_vars.add_num_div()
+    #     # [TODO] 这个暂时先不加了吧，日后再说
+    #     # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
 
-        flag_getExternalBalance = 0
-        r = [r]
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
+    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_div()
 
-    if func_name == '$eq' and flag_eq == 1:
-        flag_eq = 0
-        r = Value.from_i64(0)
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-        ret = utils.gen_symbolic_value(bin_format.i64, f'eq_{global_vars.add_flag_num_wasm()}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        r = [r]
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
+    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_div()
 
-    if func_name == '$lt' and flag_lt:
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, 0), True)
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, 0), True)
-        ret = utils.gen_symbolic_value(bin_format.i64, f'lt_{global_vars.add_flag_num_wasm()}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        # if flag_lt > 10:
-        #     global_vars.add_dict_block_solver(temp_symbolic, ret)
-        #     print(global_vars.dict_block_solver)
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
+    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_div()
 
-        # 将lt对应的符号值，加入字典中
-        # print(f'ret:{type(ret)}  g2: {type(store.globals[module.globaladdrs[2]])}')
-        # for item in list_lt_symbolic:
-        global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
-        # print(f'dict:{global_vars.dict_symbolic_address}')
+    #     flag_div = 0
+    #     r = [r]
 
-        flag_lt = 0
-        # print('finish lt')
-        r = Value.from_i64(0)
-        r = [r]
+    # if func_name == '$mul' and flag_mul:
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+    #     r = Value(bin_format.i64, ret)
+    #     global_vars.add_num_mul()        
+    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
 
-    if func_name == '$div' and flag_div:
-        ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-        r = Value(bin_format.i64, ret)
-        global_vars.add_num_div()
-        # [TODO] 这个暂时先不加了吧，日后再说
-        # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+    #     store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_mul()
+    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_div()
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+    #     store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_mul()
+    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_div()
+    #     ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
+    #     store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
+    #     global_vars.add_num_mul()
+    #     global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
 
-        ret = utils.gen_symbolic_value(bin_format.i64, f'div_{global_vars.num_div}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_div()
+    #     flag_mul = 0
+    #     r = [r]
 
-        # global_vars.add_dict_symbolic_address(ret, list_lt_symbolic)
-
-        # print('finish div')
-        flag_div = 0
-        r = [r]
-
-    if func_name == '$mul' and flag_mul:
-        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-        r = Value(bin_format.i64, ret)
-        global_vars.add_num_mul()        
-        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_mul()
-        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_mul()
-        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'mul_{global_vars.num_mul}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_mul()
-        global_vars.add_dict_symbolic_address(ret, list_mul_symbolic)
-
-        # print('finish mul')
-        flag_mul = 0
-        r = [r]
-
-    if flag_keccak256 == 1:
-        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
-        r = Value(bin_format.i64, ret)
-        global_vars.add_num_keccak256()
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
-        store.globals[module.globaladdrs[0]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_keccak256()
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
-        store.globals[module.globaladdrs[1]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_keccak256()
-
-        ret = utils.gen_symbolic_value(bin_format.i64, f'keccak256_{global_vars.num_keccak256}')
-        store.globals[module.globaladdrs[2]] = GlobalInstance(Value(bin_format.i64, ret), True)
-        global_vars.add_num_keccak256()
-        #[TODO] num_keccak256清零的函数没有调用
-
-        flag_keccak256 = 0
-        r = [r]
-
-    if flag_bswap64 == 1:
-        r = frame.locals[0]
-        flag_bswap64 = 0
-        r = [r]
-        # print(f'ccca{r}')
-    # print(new_stack)
-    # print(global_vars.block_number_id_list)
-    # print(valn)
-    
-    # if any(id(elem) in global_vars.block_number_id_list for elem in valn):
-    #     print(id(r[0]))
-    #     global_vars.add_random_number_id(id(r[0]))
-    # print(f'old stack  {stack}')
-    # print(f'new——stack {new_stack}')
-    # if str(stack) != str(new_stack):
-    #     print('change right')
-    #     pass
     stack.data[:] = new_stack.data
-    # print(f'now stack {stack}')
     return r
 
 
@@ -984,9 +740,7 @@ def fake_call(
         if global_vars.detection_mode:
             return fake_wasmfunc_call(module, address, store, stack)
         r = wasmfunc_call(module, address, store, stack)
-        # print(stack)
         return r
-        # return wasmfunc_call(module, address, store, stack)
     if isinstance(f, HostFunc):
         return fake_hostfunc_call(module, address, store, stack, m)
 
@@ -1075,10 +829,6 @@ def exec_expr(
         pc += 1
 
         if path_abort or pc >= len(expr.data):
-            # if len(global_vars.list_func) > global_vars.len_list_func:
-            #     tmp = global_vars.list_func.pop()
-            #     logger.printt(f'return func {tmp}')
-            #     logger.printt(f'{global_vars.list_func}')
             break
 
         # Analysis current state to update some variables and detect vulnerability
@@ -1089,17 +839,12 @@ def exec_expr(
         i = expr.data[pc]
 
         logger.infoln(f'{str(i) :<18} {stack} {pc} {global_vars.cur_sum_pc}')
-        # log.println(f'{str(i):<18} {stack}')
 
         # accumulate the gas cost to detect expensive fallback
         gas_cost += bin_format.gas_cost.get(i, 0)
         global_vars.max_gas_cost = max(global_vars.max_gas_cost, gas_cost)
 
         if logger.lvl >= 2:
-            # for ii, l in enumerate(frame.locals):
-            #     if ii == 11:
-            #         print(type(l))
-            #     print(f'{ii}: {bin_format.valtype[l.valtype][0]} {l.n} {type(l)}')
             ls = [f'{i}: {bin_format.valtype[l.valtype][0]} {l.n}' for i, l in enumerate(frame.locals)]
             gs = [f'{i}: {"mut " if g.mut else ""}{bin_format.valtype[g.value.valtype][0]} {g.value.n}' for i, g in
                   enumerate(store.globals)]
@@ -1127,7 +872,6 @@ def exec_expr(
                 c = object_c.n
                 arity = int(i.immediate_arguments != bin_format.empty)
                 stack.add(Label(arity, expr.composition[pc][-1] + 1))
-                # print(f'pc:{expr.composition[pc][-1] + 1} after if stack:{stack}')
                 if utils.is_all_real(c):
                     if c != 0:
                         continue
@@ -1149,10 +893,7 @@ def exec_expr(
                     global_vars.len_list_func = len(global_vars.list_func)
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
                         if utils.is_symbolic(c): #and c
-                            # print(solver.check() == z3.unsat)
-                            # print(c,type(c),object_c,type(object_c))
                             logger.debugln(f'recur {recur_depth}')
-                            # print(path_condition)
 
                             solver.pop()
                             # raise Exception('recur')
@@ -1164,8 +905,6 @@ def exec_expr(
                     try:
                         if solver.check() == z3.unsat:
                             logger.infoln(f'({pc}: {i}) infeasible path detected!')
-                            # solver.pop()
-                            # print(solver)
                             new_stack = copy.deepcopy(stack)
                             new_stack.pop()
                         else:
@@ -1173,16 +912,13 @@ def exec_expr(
                             new_store = copy.deepcopy(store)
                             new_frame = copy.deepcopy(frame)
                             new_stack = copy.deepcopy(stack)
-                            # print(f'new stack:{new_stack}')
                             new_expr = copy.deepcopy(expr)
                             new_pc = pc
                             block_number_flag = id(c) in global_vars.block_number_id_list or block_number_flag  # set flag if "c" is associated with the block number
                             path_condition.append(c != 0)
                             recur_depth += 1
-                            # print(f'abcd{recur_depth}')
                             gas_cost -= bin_format.gas_cost.get(i, 0)
                             global_vars.sum_pc.append(global_vars.cur_sum_pc)
-                            # print(f'before left branch, function length:{len(global_vars.list_func)} {path_condition}')
                             left_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
 
                             logger.infoln(f'leave left branch{pc}')
@@ -1196,7 +932,6 @@ def exec_expr(
                                 if len(left_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], left_branch_res[:])
                             path_condition = path_condition[:len_path_condition]
-                            # path_condition.pop()
                     except TimeoutError:
                         logger.infoln('Timeout in path exploration.')
                     except Exception as e:
@@ -1206,37 +941,19 @@ def exec_expr(
                         path_condition = path_condition[:len_path_condition]
                         recur_depth -= 1
 
-
-                        # print('sum_pc:', global_vars.cur_sum_pc)
-                        # print('行号', e.__traceback__.tb_lineno)
-                    # # 用函数的形式重构下列代码
-                    # print(f'after left branch, function length:{len(global_vars.list_func)} ')
-                    # print(f'after left branch, dict:{global_vars.dict_symbolic_address}')
-                    # print(f'after left branch, solver:{solver}')
-                    # print(f'after left branch, path_condition:{path_condition}')
                     m = store.mems[module.memaddrs[0]]
-                    # print(f'after left branch, len m.data:{len(m.data)}')
-                    # print(f'after left branch, m.data:{m.data[0:100]}')
                     list_solver = solver.units()
                     vars = get_vars(list_solver[-1])
-                    # print(vars)
                     for var in vars:
-                        # print(var, type(list_solver[-1]))
                         if str(var) == 'callDataCopy_0':
-                            # print(f'ac \'{str(list_solver[-1])[-5:]}\'')
                             if len(global_vars.list_func) == 1:
                                 global_vars.clear_dict_symbolic_address()
-                                print('leave function bcb')
 
-                    # print(f'after clear, dict:{global_vars.dict_symbolic_address}')
 
                     path_depth -= 1
 
-                    # print(f'right before {solver}')
                     solver.pop()
-                    # print(f'right pop {solver}')
                     solver.push()
-                    # print(f'right push {solver}')
                     solver.add(c == 0)
                     find_symbolic_in_solver(solver)
                     logger.debugln(solver)
@@ -1244,9 +961,8 @@ def exec_expr(
                     try:
                         if solver.check() == z3.unsat:
                             logger.infoln(f'({pc}: {i}) infeasible path detected!')
-                            # solver.pop()
-                            # print(f'solver')
                             new_stack = stack
+                            new_stack.pop()
                         else:
                             # Execute the right branch
                             new_store = copy.deepcopy(store)
@@ -1261,7 +977,6 @@ def exec_expr(
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
                             global_vars.sum_pc.append(global_vars.cur_sum_pc)
-                            # print(f'before right branch, function length:{len(global_vars.list_func)} {path_condition}')
                             right_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
                             logger.infoln(f'leave right branch {pc}')
                             logger.debugln(new_stack)
@@ -1271,39 +986,30 @@ def exec_expr(
                                 if path_depth <= 0:
                                     temp_stack = Stack()
                                     temp_stack.add(frame)
-                                    # print(f'right path_depth <= 0')
                                     return branch_res, temp_stack
                                 else:
-                                    # print('aaa')
                                     new_stack = global_vars.last_stack[-1]
                             else:
                                 branch_res += right_branch_res
                                 if len(right_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], right_branch_res[:])
-                            # path_condition.pop()
                             path_condition = path_condition[:len_path_condition]
                     except TimeoutError as e:
                         raise e
                     except Exception as e:
-                        logger.infoln(f'Exception1: {e}')
+                        logger.infoln(f'Exception: {e}')
                         global_vars.cur_sum_pc = global_vars.sum_pc.pop()
                         global_vars.list_func = global_vars.list_func[:len_list_func]
                         path_condition = path_condition[:len_path_condition]
-                        print('行号', e.__traceback__.tb_lineno)
+                        print('line:', e.__traceback__.tb_lineno)
                         recur_depth -= 1
-
-                        # print('sum_pc:', global_vars.cur_sum_pc)
-
 
                     solver.pop()
                     if path_depth <= 0:
-                        # [TODO] delegate.LANDProxy.Proxy中，出现了path_depth<=0的情况，导致出错
-                        print(f'path_depth <= 0')
                         temp_stack = Stack()
                         temp_stack.add(frame)
                         return branch_res, temp_stack
                     global_vars.last_stack.pop()
-                    # print(new_stack)
                     return branch_res, new_stack
 
             if opcode == bin_format.else_:
@@ -1312,7 +1018,6 @@ def exec_expr(
                     e = stack.data[i]
                     if isinstance(e, Label):
                         pc = e.continuation - 1
-                        # print(stack)
                         logger.debugln(pc)
                         del stack.data[i]
                         break
@@ -1359,7 +1064,6 @@ def exec_expr(
                     logger.infoln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
-                        # print('return -> recur_depth > global_vars.BRANCH_DEPTH_LIMIT')
                         return branch_res, global_vars.last_stack[-1] if global_vars.last_stack != [] else None
                     global_vars.last_stack.append(stack)
                     try:
@@ -1423,7 +1127,6 @@ def exec_expr(
                                 if path_depth <= 0:
                                     temp_stack = Stack()
                                     temp_stack.add(frame)
-                                    # print('return -> br_if path_depth<=0')
                                     return branch_res, temp_stack
                                 else:
                                     new_stack = global_vars.last_stack[-1]
@@ -1441,10 +1144,8 @@ def exec_expr(
                     if path_depth <= 0:
                         temp_stack = Stack()
                         temp_stack.add(frame)
-                        print('return -> br_if2 path_depth<=0')
                         return branch_res, temp_stack
                     global_vars.last_stack.pop()
-                    # print('return -> br_if')
                     return branch_res, new_stack
 
             # [TODO] Ready to implement symbolic execution.
@@ -1465,20 +1166,12 @@ def exec_expr(
                         stack.add(e)
                         break
                 stack.ext(v)
-                print('return -> br_if2 path_depth<=0')
                 break
 
             if opcode == bin_format.call:
                 m = store.mems[module.memaddrs[0]]
-                # tmp = stack
                 r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack, m)
-                # print(r)
-                # print(tmp)
-                # print(stack)
-                # print('1111')
                 stack.ext(r)
-                # print(stack)
-                # print('2222')
 
                 if global_vars.flag_revert > 0:
                     global_vars.clear_flag_revert()
@@ -1486,9 +1179,7 @@ def exec_expr(
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
-                    # print(f'aaa{id(r[0])}')
                     global_vars.add_random_number_id(id(r[0]))
-                    # print(f'aaa{global_vars.block_number_id_list}')
 
                 # detect the send token call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.send_token_function_addr:
@@ -1498,12 +1189,10 @@ def exec_expr(
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
                     check_ethereum_delegate_call(expr.data[pc - 1])
                 
-                # print('3333')
 
 
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
-                # print('4444')
 
                 continue
 
@@ -1526,7 +1215,6 @@ def exec_expr(
                 # there may exists random number bug, therefore count the function call
                 if tab.elem[idx] in global_vars.tapos_block_function_addr:
                     global_vars.add_random_number_id(id(r[0]))
-                    # print(f'aaa{global_vars.block_number_id_list}')
 
 
                 # detect the ethereum greedy bug: is the function called a payable?
@@ -1565,8 +1253,6 @@ def exec_expr(
                 print("越界")
                 frame.locals.extend([Value.from_i32(0) for _ in range(i.immediate_arguments - len(frame.locals) + 1)])
             tmp = stack.pop()
-            # print(f'settt{i.immediate_arguments} {tmp},{type(tmp)}')
-            # frame.locals[i.immediate_arguments] = stack.pop()
             frame.locals[i.immediate_arguments] = tmp
             continue
 
@@ -1747,10 +1433,6 @@ def exec_expr(
             if bin_format.i32_store <= opcode <= bin_format.i64_store32:
                 # v is value, a is address
                 v = stack.pop().n
-                # print(type(v))
-                # if isinstance(v, Value):
-                #     print(type(v.n))
-                #     v = v.n
                 a = stack.pop().n + i.immediate_arguments[1]
                 if utils.is_symbolic(a):
                     a = z3.simplify(a)
@@ -1824,11 +1506,8 @@ def exec_expr(
                     continue
                 if opcode == bin_format.i64_store:
                     m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
-                    print(a, v, m.data[a:a + 8])
                     if utils.is_symbolic(v):
                         global_vars.add_dict_symbolic_address(v, a)
-                    # print(a,v)
-                    # print(number.MemoryStore.pack_i64(128))
                     continue
 
                 if opcode == bin_format.f32_store:
@@ -1911,11 +1590,9 @@ def exec_expr(
             if opcode == bin_format.i32_eq:
                 if utils.is_all_real(a, b):
                     computed = int(a == b)
-                    # print(f'computed: {computed} {type(computed)}')
                 else:
                     computed = z3.simplify(z3.If(a == b, z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
                 object_c = Value.from_i32(computed)
-                # print(f'a type:{type(a)} b type:{type(b)} a eq b type:{type(object_c)}')
                 stack.add(object_c)
 
             elif opcode == bin_format.i32_ne:
@@ -2046,9 +1723,7 @@ def exec_expr(
                     computed = int(number.int2u64(a) < number.int2u64(b))
                 else:
                     computed = z3.simplify(z3.If(z3.ULT(a, b), z3.BitVecVal(1, 32), z3.BitVecVal(0, 32)))
-                    # print(f'aaab {a} {b} {computed}')
                 object_c = Value.from_i32(computed)
-                # print(f'ltu:computed:{computed} {type(computed)} object_c:{object_c} {type(object_c)}')
                 stack.add(object_c)
 
             elif opcode == bin_format.i64_gts:
@@ -2901,5 +2576,5 @@ def exec_expr(
                 stack.add(Value.from_f64(number.i642f64(a)))
                 continue
             continue
-    # print('自然return')
+
     return [stack.pop() for _ in range(frame.arity)][::-1], stack

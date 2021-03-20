@@ -101,7 +101,8 @@ def function_analysis(vm) -> None:
                 if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
                         in global_vars.call_delegate_addr:
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
-                        global_vars.find_ethereum_delegate_call()
+                        # global_vars.find_ethereum_delegate_call()
+                        pass
         global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
         detect_greedy(vm)
         check_block_dependence_static(vm)
@@ -229,7 +230,7 @@ def check_block_dependence_dynamic(solver:'solver'):
     else:
         pass
 
-def check_reentrancy_bug(path_condition:list, memory, solver):
+def check_reentrancy_bug(memory, solver, path_condition:list = None):
     """This function is used to detect reentrancy vulnerabilities, 
 
     Args:
@@ -312,7 +313,8 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
     the correctness of the analysis.
     """
     if instr in (bin_format.i32_const, bin_format.i64_const):
-        global_vars.find_ethereum_delegate_call()
+        # global_vars.find_ethereum_delegate_call()
+        pass
 
 def check_mishandled_exception(solver: 'solver', pc: int) -> None:
     """This function is used to detect mishandled exception

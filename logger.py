@@ -20,7 +20,8 @@ def infoln(*args):
 
 def debugln(*args):
     if lvl >= 2:
-        println('DEBUG' + *args)
+        pre = 'DEBUG'
+        println(pre, *args)
 
 def verboseln(*args):
     if lvl >= 3:
@@ -37,3 +38,5 @@ def fatalln(*args):
     sys.exit(1)
 
 lvl = 2
+
+

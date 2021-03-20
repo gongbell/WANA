@@ -24,7 +24,7 @@ from runtime import WasmFunc
 from bug_analyzer import locate_transfer, function_analysis, detect_fake_eos
 from bug_analyzer import fake_eos_analysis
 from bug_analyzer import count_instruction
-from emulator import function_map
+from emulator import hostfunc_map
 
 
 class Runtime:
@@ -77,8 +77,7 @@ class Runtime:
                     global_vars.add_get_call_value_addr(len(self.store.funcs))
                 if e.module in ('ethereum',) and e.name in ('revert',):
                     global_vars.add_revert_addr(len(self.store.funcs))
-                a = sym_exec.HostFunc(self.module.types[e.desc], function_map[e.module][e.name], e.name)
-
+                a = sym_exec.HostFunc(self.module.types[e.desc], hostfunc_map[e.module][e.name], e.name)
                 self.store.funcs.append(a)
                 externvals.append(sym_exec.ExternValue(e.kind, len(self.store.funcs) - 1))
                 continue
