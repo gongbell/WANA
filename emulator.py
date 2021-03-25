@@ -641,16 +641,19 @@ class EthereumEmulator:
         r = utils.gen_symbolic_value(bin_format.i32, f'call_{r}')
         global_vars.call_symbolic_ret[f'{r}'] = global_vars.cur_sum_pc
         logger.infoln(f'save eth.call and cur_sum_pc{global_vars.call_symbolic_ret}')
+        logger.infoln(f'solver{solver}')
         check_block_dependence_dynamic(solver)
         check_reentrancy_bug(memory, solver)
         return r
 
     @classmethod
     def callDataCopy(cls, args, solver, memory):
+        print(args[0])
         address = args[0].n
         # [TODO] Really simulate callDataCopy, such as setting several symbol values for callDataCopy, 
         # and setting the offset according to the offset required by the contract, etc.
         for i in range(4):
+
             v = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
             memory.data[address:address + 8] = number.MemoryStore.pack_i64(v)
             global_vars.add_num_callDataCopy()
@@ -700,7 +703,7 @@ class EthereumEmulator:
                 if a <= tmp <= a + l:
                     print(a, item, 'find sym')
                     global_vars.find_ethereum_delegate_call()
-        return [r]
+        return r
 
     @classmethod
     def callStatic(cls, args, solver, memory):
@@ -872,8 +875,7 @@ class EthereumEmulator:
     def selfDestruct(cls, args, solver, memory):
         global_vars.add_flag_revert()
         logger.infoln(f'eth.selfDestruct')
-        pass
-
+        return []
     @classmethod
     def getBlockTimestamp(cls, args, solver, memory):
         r = randint(0,20)
@@ -1328,8 +1330,19 @@ class EthereumWasmFunc:
 
     @classmethod
     def calldatacopy(cls, args, solver, store):
-        # [TODO]
-        pass
+        if utils.is_all_real(args[0].n, args[1].n, args[2].n, args[3].n):
+            return 0
+        else:
+            ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+            r = [Value(bin_format.i64, ret)]
+            global_vars.add_num_callDataCopy()
+            for i in range(3):
+                ret = utils.gen_symbolic_value(bin_format.i64, f'callDataCopy_{global_vars.num_callDataCopy}')
+                r.append(GlobalInstance(Value(bin_format.i64, ret), True))
+                global_vars.add_num_callDataCopy()
+            return r
+
+
 
     @classmethod
     def codesize(cls, args, solver, store):
@@ -1897,5 +1910,5 @@ realize_list_host = ['callDataCopy','storageStore','storageLoad','getCaller',
                 'getReturnDataSize', 'call', 'getBlockTimestamp',
                 'getBlockNumber', 'getExternalCodeSize', 'getExternalBalance']
 
-realize_list_wasm = ['$lt_320x320_64', '$lt_512x512_64', '$lt_256x256_64', '$bswap64', 
-                '$keccak256', '$eq', '$mul', '$div']
+realize_list_wasm = ['$lt_320x320_64', '$lt_512x512_64', '$lt_256x256_64', 
+                        '$bswap64', '$keccak256', '$eq', '$mul', '$div', '$calldatacopy']

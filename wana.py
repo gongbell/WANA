@@ -13,6 +13,7 @@ import traceback
 from typing import List
 from func_timeout import func_timeout
 from func_timeout import FunctionTimedOut
+import time 
 
 import bin_format
 import sym_exec
@@ -335,12 +336,18 @@ def main():
     if args.simple:
         global_vars.is_simple = args.simple
 
+    start = float()
+    end = float()
     # Execute a export functions of wasm
     if args.execute:
         try:
+            start = time.perf_counter()
             func_timeout(args.timeout, execution_and_analyze, args=(args.execute,))
+            end = time.perf_counter()
         except FunctionTimedOut:
             logger.println(f'{args.execute}: time out')
+            end = time.perf_counter()
+            after_sym_exec('')
         except Exception as e:
             logger.infoln(traceback.format_exc())
             logger.println(f'Error: {e}')
@@ -369,6 +376,8 @@ def main():
                 continue
             float_count, count = count_instruction(vm.module.funcs)
             logger.println(f'float: {float_count}  all: {count}')
+
+    logger.println(f'use time: {end-start}')
 
 
 def execution_and_analyze(contract_path):
