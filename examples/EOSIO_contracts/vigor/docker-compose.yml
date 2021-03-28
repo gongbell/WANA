@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+
+  nodeos:
+    container_name: nodeos
+    image: my/eos
+    command: nodeos -e -p eosio --plugin eosio::producer_plugin --plugin eosio::history_plugin --plugin eosio::chain_api_plugin --plugin eosio::history_api_plugin --plugin eosio::http_plugin --http-server-address=0.0.0.0:8888 --access-control-allow-origin=* --contracts-console --http-validate-host=false --filter-on="*"
+    stop_grace_period: 3m0s
+    volumes:
+      - ./contracts:/eosio.cdt/contract
+      - ./scripts:/scripts
+      - ./config.ini:/root/.local/share/eosio/nodeos/config/config.ini
+    ports:
+      - '8888:8888'
+      - '9830:9876'
+    depends_on:
+      - keosd
+
+  keosd:
+    container_name: keosd
+    hostname: keosd
+    image: my/eos
+    command: keosd --http-server-address=0.0.0.0:8901 --http-validate-host 0 --verbose-http-errors --unlock-timeout=9999999
+    volumes:
+      - ./default.wallet:/root/eosio-wallet/default.wallet
+    expose:
+      - 8901
+    ports:
+      - '8901:8901'

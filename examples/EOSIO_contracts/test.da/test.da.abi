@@ -1,0 +1,102 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "da",
+      "base": "",
+      "fields": [{
+          "name": "post_id",
+          "type": "uint64"
+        },{
+          "name": "poster",
+          "type": "account_name"
+        },{
+          "name": "title",
+          "type": "string"
+        },{
+          "name": "content",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "create",
+      "base": "",
+      "fields": [{
+          "name": "user",
+          "type": "account_name"
+        },{
+          "name": "title",
+          "type": "string"
+        },{
+          "name": "content",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "change",
+      "base": "",
+      "fields": [{
+          "name": "user",
+          "type": "account_name"
+        },{
+          "name": "post_id",
+          "type": "uint64"
+        },{
+          "name": "title",
+          "type": "string"
+        },{
+          "name": "content",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "dele",
+      "base": "",
+      "fields": [{
+          "name": "user",
+          "type": "account_name"
+        },{
+          "name": "post_id",
+          "type": "uint64"
+        }
+      ]
+    },{
+      "name": "get_data",
+      "base": "",
+      "fields": [{
+          "name": "post_id",
+          "type": "uint64"
+        },{
+          "name": "user",
+          "type": "account_name"
+        }
+      ]
+    }
+  ],
+  "actions": [{
+          "name": "create",
+          "type": "create",
+        },{
+          "name": "change",
+          "type": "change",
+        },{
+          "name": "dele",
+          "type": "dele",
+        },{
+          "name": "getd",
+          "type": "get_data",
+        }
+  ],
+  "tables": [{
+      "name": "data",
+      "index_type": "i64",
+      "key_names": [
+        "post_id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "da"
+    }
+  ],
+  "ricardian_clauses": []
+}

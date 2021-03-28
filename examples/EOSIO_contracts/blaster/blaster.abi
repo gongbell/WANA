@@ -1,0 +1,36 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Fri Nov 30 13:54:32 2018",
+    "version": "eosio::abi/1.1",
+    "structs": [
+        {
+            "name": "blast",
+            "base": "",
+            "fields": [
+                {
+                    "name": "blast_time",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start",
+                    "type": "uint32"
+                },
+                {
+                    "name": "iterations",
+                    "type": "uint32"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "blast",
+            "type": "blast",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}

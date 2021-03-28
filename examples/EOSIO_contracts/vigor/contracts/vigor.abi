@@ -1,0 +1,490 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "assetin",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "assetin",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "assetout",
+            "base": "",
+            "fields": [
+                {
+                    "name": "usern",
+                    "type": "name"
+                },
+                {
+                    "name": "assetout",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "close",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "maximum_supply",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "currency_stats",
+            "base": "",
+            "fields": [
+                {
+                    "name": "supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "max_supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "issuer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "datapoints",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "uint64"
+                },
+                {
+                    "name": "median",
+                    "type": "uint64"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "doupdate",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "globalstats",
+            "base": "",
+            "fields": [
+                {
+                    "name": "solvency",
+                    "type": "float64"
+                },
+                {
+                    "name": "valueofcol",
+                    "type": "float64"
+                },
+                {
+                    "name": "valueofins",
+                    "type": "float64"
+                },
+                {
+                    "name": "scale",
+                    "type": "float64"
+                },
+                {
+                    "name": "svalueofcole",
+                    "type": "float64"
+                },
+                {
+                    "name": "svalueofins",
+                    "type": "float64"
+                },
+                {
+                    "name": "stressins",
+                    "type": "float64"
+                },
+                {
+                    "name": "inreserve",
+                    "type": "asset"
+                },
+                {
+                    "name": "totaldebt",
+                    "type": "asset"
+                },
+                {
+                    "name": "insurance",
+                    "type": "asset[]"
+                },
+                {
+                    "name": "collateral",
+                    "type": "asset[]"
+                }
+            ]
+        },
+        {
+            "name": "issue",
+            "base": "",
+            "fields": [
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "open",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "ram_payer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "pair_symbol_int64",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "symbol"
+                },
+                {
+                    "name": "value",
+                    "type": "int64"
+                }
+            ]
+        },
+        {
+            "name": "retire",
+            "base": "",
+            "fields": [
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "setsupply",
+            "base": "",
+            "fields": [
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "maximum_supply",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "statspre",
+            "base": "",
+            "fields": [
+                {
+                    "name": "freq",
+                    "type": "uint64"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "returns",
+                    "type": "int64[]"
+                },
+                {
+                    "name": "correlation_matrix",
+                    "type": "pair_symbol_int64[]"
+                },
+                {
+                    "name": "vol",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "user_s",
+            "base": "",
+            "fields": [
+                {
+                    "name": "usern",
+                    "type": "name"
+                },
+                {
+                    "name": "debt",
+                    "type": "asset"
+                },
+                {
+                    "name": "collateral",
+                    "type": "asset[]"
+                },
+                {
+                    "name": "insurance",
+                    "type": "asset[]"
+                },
+                {
+                    "name": "valueofcol",
+                    "type": "float64"
+                },
+                {
+                    "name": "valueofins",
+                    "type": "float64"
+                },
+                {
+                    "name": "tesprice",
+                    "type": "float64"
+                },
+                {
+                    "name": "pcts",
+                    "type": "float64"
+                },
+                {
+                    "name": "volcol",
+                    "type": "float64"
+                },
+                {
+                    "name": "stresscol",
+                    "type": "float64"
+                },
+                {
+                    "name": "istresscol",
+                    "type": "float64"
+                },
+                {
+                    "name": "svalueofcol",
+                    "type": "float64"
+                },
+                {
+                    "name": "svalueofcole",
+                    "type": "float64"
+                },
+                {
+                    "name": "feespaid",
+                    "type": "asset"
+                },
+                {
+                    "name": "creditscore",
+                    "type": "uint64"
+                },
+                {
+                    "name": "lastupdate",
+                    "type": "uint32"
+                },
+                {
+                    "name": "latepays",
+                    "type": "uint32"
+                },
+                {
+                    "name": "recaps",
+                    "type": "uint32"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "assetin",
+            "type": "assetin",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "assetout",
+            "type": "assetout",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "close",
+            "type": "close",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "doupdate",
+            "type": "doupdate",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "issue",
+            "type": "issue",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open",
+            "type": "open",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "retire",
+            "type": "retire",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setsupply",
+            "type": "setsupply",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "accounts",
+            "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "datapoints",
+            "type": "datapoints",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "globals",
+            "type": "globalstats",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stat",
+            "type": "currency_stats",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stats",
+            "type": "statspre",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "user",
+            "type": "user_s",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

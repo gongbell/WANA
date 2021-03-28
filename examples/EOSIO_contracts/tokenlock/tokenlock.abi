@@ -1,0 +1,87 @@
+{
+  "version": "eosio::abi/1.0",
+  "types": [],
+  "structs": [
+    {
+      "name": "lockup",
+      "base": "",
+      "fields": [
+        {
+          "name": "symbol",
+          "type": "uint64"
+        },
+        {
+          "name": "locked",
+          "type": "uint8"
+        },
+        {
+          "name": "unlock_delay",
+          "type": "uint64"
+        },
+        {
+          "name": "unlock_time",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "lockact",
+      "base": "",
+      "fields": [
+        {
+          "name": "user",
+          "type": "name"
+        },
+          {
+            "name": "tok",
+            "type": "asset"
+          },
+        {
+          "name": "unlock_wait",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "unlockact",
+      "base": "",
+      "fields": [
+        {
+          "name": "user",
+          "type": "name"
+        },
+        {
+          "name": "tok",
+          "type": "asset"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "lock",
+      "type": "lockact",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "unlock",
+      "type": "unlockact",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+    {
+      "name": "lockup",
+      "index_type": "i64",
+      "key_names": [
+        "symbol"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "lockup"
+    }
+  ],
+  "ricardian_clauses": [],
+  "abi_extensions": []
+}

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="apple-touch-icon" sizes="76x76" href="./assets/img/apple-icon.png">
+  <link rel="icon" type="image/png" href="./assets/img/favicon.png">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <title>
+    ReliefChain
+  </title>
+  <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no' name='viewport' />
+  <!--     Fonts and icons     -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700,200" rel="stylesheet" />
+  <link href="./assets/css/font-awesome.min.css" rel="stylesheet">
+  <!-- CSS Files -->
+  <link href="./assets/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="./assets/css/paper-dashboard.css?v=2.0.0" rel="stylesheet" />
+</head>
+
+<body class="">
+  <div class="wrapper ">
+    <div class="sidebar" data-color="white" data-active-color="danger">
+      <!--
+        Tip 1: You can change the color of the sidebar using: data-color="blue | green | orange | red | yellow"
+      -->
+      <div class="logo">
+        <a href="" class="simple-text logo-mini">
+          <div class="logo-image-small">
+            <img src="./assets/logo.png">
+          </div>
+        </a>
+        <a href="" class="simple-text logo-normal">
+          ReliefChain
+          <!-- <div class="logo-image-big">
+            <img src="./assets/img/logo-big.png">
+          </div> -->
+        </a>
+      </div>
+
+      <div class="sidebar-wrapper">
+        <ul class="nav">
+          <li class="active ">
+            <a href="./dashboard.html">
+              <i class="nc-icon nc-bank"></i>
+              <p>Disaster Event</p>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="main-panel">
+
+
+
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg navbar-absolute fixed-top navbar-transparent">
+        <div class="container-fluid">
+          <div class="navbar-wrapper">
+            <div class="navbar-toggle">
+              <button type="button" class="navbar-toggler">
+                <span class="navbar-toggler-bar bar1"></span>
+                <span class="navbar-toggler-bar bar2"></span>
+                <span class="navbar-toggler-bar bar3"></span>
+              </button>
+            </div>
+            <a class="navbar-brand" href="#pablo"><strong>Katrina Hurricane</strong></a> <span class="label label-default">Ongoing</span>
+          </div>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-bar navbar-kebab"></span>
+            <span class="navbar-toggler-bar navbar-kebab"></span>
+            <span class="navbar-toggler-bar navbar-kebab"></span>
+          </button>
+        </div>
+      </nav>
+      <!-- End Navbar -->
+
+
+
+
+      <div class="content">
+
+        <div class="well">
+          <h1>Total tokens: <span id="totaltokens"></span></h1>
+          <h1>Issued tokens: <span id="issuedtokens"></span></h1>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-6 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="image">
+                <img src="./assets/img/DisasterRelief2.jpg" alt="...">   
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-globe text-warning"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Citizens</p>
+                      <p class="card-title">90,000 <span class="smaller">Registered</span></p>
+                      <p class="card-title">60,000 <span class="smaller">Accounted</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer ">
+                <hr>
+                <div class="stats">
+                  Updated 2 hours ago
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-app text-warning"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Food Supplies</p>
+                      <p class="card-title">50,000 <span class="smaller">Required</span></p>
+                      <p class="card-title">20,000 <span class="smaller">Contributed</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer ">
+                <hr>
+                <div class="stats">
+                  Updated 2 hours ago
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-single-02 text-success"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Clothes Supplies</p>
+                      <p class="card-title">45,986 <span class="smaller">Required</span></p>
+                      <p class="card-title">34,546 <span class="smaller">Contributed</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer ">
+                <hr>
+                <div class="stats">
+                  Updated 3 hours ago
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-atom text-primary"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Water Supplies</p>
+                      <p class="card-title">23,390 <span class="smaller">Required</span></p>
+                      <p class="card-title">18,990 <span class="smaller">Contributed</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer ">
+                <hr>
+                <div class="stats">
+                  Updated 1 hour ago
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-shop text-warning"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Shelter Supplies</p>
+                      <p class="card-title">45,089 <span class="smaller">Required</span></p>
+                      <p class="card-title">30,856 <span class="smaller">Contributed</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer ">
+                <hr>
+                <div class="stats">
+                  Updated 30 mins ago
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-ambulance text-primary"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Medical Supplies</p>
+                      <p class="card-title">75,549 <span class="smaller">Required</span></p>
+                      <p class="card-title">60,687 <span class="smaller">Contributed</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <hr>
+                <div class="stats">
+                  Updated 30 mins ago
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 col-sm-6">
+            <div class="card card-stats">
+              <div class="card-body ">
+                <div class="row">
+                  <div class="col-5 col-md-2">
+                    <div class="icon-big text-center icon-warning">
+                      <i class="nc-icon nc-favourite-28 text-danger"></i>
+                    </div>
+                  </div>
+                  <div class="col-7 col-md-10">
+                    <div class="numbers">
+                      <p class="card-category">Volunteers</p>
+                      <p class="card-title">5,549 <span class="smaller">Active</span></p>
+                      <p class="card-title">200 <span class="smaller">Inactive</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <hr>
+                <div class="stats">
+                  Updated 30 mins ago
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="footer footer-black  footer-white ">
+        <div class="container-fluid">
+          <div class="row">
+            <nav class="footer-nav">
+              <ul>
+                <li>
+                  <a href="#" target="_blank">ReliefChain</a>
+                </li>
+              </ul>
+            </nav>
+            <div class="credits ml-auto">
+              <span class="copyright">
+                ©
+                <script>
+                  document.write(new Date().getFullYear())
+                </script>, made with <i class="fa fa-heart heart"></i> by ReliefChain Team
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+  <!--   Core JS Files   -->
+  <script src="./assets/js/core/jquery.min.js"></script>
+  <script src="./assets/js/core/popper.min.js"></script>
+  <script src="./assets/js/core/bootstrap.min.js"></script>
+
+  <script type="text/javascript">
+    pollBlockchain = function(){
+      var pollURL = "http://127.0.0.1:8888/v1/chain/get_currency_stats";
+      var data = JSON.stringify({
+        "code": "eosio.token",
+        "symbol": "RFT"
+      });
+      $.ajax({
+        type: "POST",
+        url: pollURL,
+        timeout: 100,
+        data: data,
+        dataType: "json",
+        success: function(data){
+          console.log(JSON.stringify(data))
+          $("#totaltokens").html(data.RFT.max_supply);
+          $("#issuedtokens").html(data.RFT.supply);
+        },
+        failure: function(errMsg) {
+          alert(errMsg);
+        }
+      });
+    }
+    setInterval(pollBlockchain, 1000);
+
+  </script>
+</body>
+
+</html>

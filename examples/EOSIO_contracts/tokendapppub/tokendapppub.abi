@@ -1,0 +1,553 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Jul 25 11:40:17 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "addreftowl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "agent",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "addtowl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "agent",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "buy",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "sell",
+                    "type": "_Bool"
+                }
+            ]
+        },
+        {
+            "name": "consume",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "maximum_supply",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "destroy",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "detail",
+            "base": "",
+            "fields": [
+                {
+                    "name": "tokenname",
+                    "type": "string"
+                },
+                {
+                    "name": "dappname",
+                    "type": "string"
+                },
+                {
+                    "name": "logo",
+                    "type": "string"
+                },
+                {
+                    "name": "website",
+                    "type": "string"
+                },
+                {
+                    "name": "social",
+                    "type": "string"
+                },
+                {
+                    "name": "community",
+                    "type": "string"
+                },
+                {
+                    "name": "medium",
+                    "type": "string"
+                },
+                {
+                    "name": "github",
+                    "type": "string"
+                },
+                {
+                    "name": "contract",
+                    "type": "name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "hellodapppub",
+            "base": "",
+            "fields": [
+                {
+                    "name": "base_eos_quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "maximum_stake",
+                    "type": "asset"
+                },
+                {
+                    "name": "option_quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "lock_up_period",
+                    "type": "uint32"
+                },
+                {
+                    "name": "base_fee_percent",
+                    "type": "uint8"
+                },
+                {
+                    "name": "init_fee_percent",
+                    "type": "uint8"
+                },
+                {
+                    "name": "refer_fee",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start_time",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "issue",
+            "base": "",
+            "fields": [
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "lock",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "actions",
+                    "type": "vector<action_name>"
+                }
+            ]
+        },
+        {
+            "name": "newtoken",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "base_eos_quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "maximum_stake",
+                    "type": "asset"
+                },
+                {
+                    "name": "option_quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "lock_up_period",
+                    "type": "uint32"
+                },
+                {
+                    "name": "base_fee_percent",
+                    "type": "uint8"
+                },
+                {
+                    "name": "init_fee_percent",
+                    "type": "uint8"
+                },
+                {
+                    "name": "refer_fee",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start_time",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "receipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "type",
+                    "type": "string"
+                },
+                {
+                    "name": "in",
+                    "type": "asset"
+                },
+                {
+                    "name": "out",
+                    "type": "asset"
+                },
+                {
+                    "name": "fee",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "reg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "sell",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "setactionwl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "action",
+                    "type": "name"
+                },
+                {
+                    "name": "from",
+                    "type": "vector<account_name>"
+                },
+                {
+                    "name": "to",
+                    "type": "vector<account_name>"
+                }
+            ]
+        },
+        {
+            "name": "setref",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "trans",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "setreferfee",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "refer_fee",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "setsellfee",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "base_fee_percent",
+                    "type": "uint64"
+                },
+                {
+                    "name": "init_fee_percent",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "settrans",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name_str",
+                    "type": "string"
+                },
+                {
+                    "name": "trans",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "vector",
+            "base": "int32",
+            "fields": []
+        }
+    ],
+    "types": [
+        {
+            "new_type_name": "vector<account_name>",
+            "type": ">"
+        },
+        {
+            "new_type_name": "vector<action_name>",
+            "type": ">"
+        }
+    ],
+    "actions": [
+        {
+            "name": "addreftowl",
+            "type": "addreftowl",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addtowl",
+            "type": "addtowl",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "buy",
+            "type": "buy",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "consume",
+            "type": "consume",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "destroy",
+            "type": "destroy",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "detail",
+            "type": "detail",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "hellodapppub",
+            "type": "hellodapppub",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "issue",
+            "type": "issue",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "lock",
+            "type": "lock",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newtoken",
+            "type": "newtoken",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "receipt",
+            "type": "receipt",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "reg",
+            "type": "reg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sell",
+            "type": "sell",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setactionwl",
+            "type": "setactionwl",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setref",
+            "type": "setref",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setreferfee",
+            "type": "setreferfee",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setsellfee",
+            "type": "setsellfee",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "settrans",
+            "type": "settrans",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

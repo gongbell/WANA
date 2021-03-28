@@ -1,0 +1,390 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Aug  5 21:29:47 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "allocateb",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "participantname",
+                    "type": "string"
+                },
+                {
+                    "name": "distribution",
+                    "type": "string"
+                },
+                {
+                    "name": "score",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "authorname",
+                    "type": "string"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                },
+                {
+                    "name": "status",
+                    "type": "string"
+                },
+                {
+                    "name": "rolenumbers",
+                    "type": "string"
+                },
+                {
+                    "name": "reward",
+                    "type": "string"
+                },
+                {
+                    "name": "pledge",
+                    "type": "string"
+                },
+                {
+                    "name": "updatedat",
+                    "type": "string"
+                },
+                {
+                    "name": "requires",
+                    "type": "string"
+                },
+                {
+                    "name": "likevote",
+                    "type": "string"
+                },
+                {
+                    "name": "hatevote",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "erase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "participate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "participantname",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "selectatask",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "selectitems",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "filter",
+                    "type": "string"
+                },
+                {
+                    "name": "judge",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "showinfo",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "task",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                },
+                {
+                    "name": "status",
+                    "type": "string"
+                },
+                {
+                    "name": "rolenumbers",
+                    "type": "string"
+                },
+                {
+                    "name": "reward",
+                    "type": "string"
+                },
+                {
+                    "name": "pledge",
+                    "type": "string"
+                },
+                {
+                    "name": "updatedat",
+                    "type": "string"
+                },
+                {
+                    "name": "requires",
+                    "type": "string"
+                },
+                {
+                    "name": "participants",
+                    "type": "user>"
+                },
+                {
+                    "name": "likevote",
+                    "type": "string"
+                },
+                {
+                    "name": "hatevote",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "update",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                },
+                {
+                    "name": "status",
+                    "type": "string"
+                },
+                {
+                    "name": "rolenumbers",
+                    "type": "string"
+                },
+                {
+                    "name": "reward",
+                    "type": "string"
+                },
+                {
+                    "name": "pledge",
+                    "type": "string"
+                },
+                {
+                    "name": "updatedat",
+                    "type": "string"
+                },
+                {
+                    "name": "requires",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "updatestatus",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "status",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "updatevotes",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "likevote",
+                    "type": "string"
+                },
+                {
+                    "name": "hatevote",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "withdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                },
+                {
+                    "name": "task_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "participantname",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "allocateb",
+            "type": "allocateb",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "erase",
+            "type": "erase",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "participate",
+            "type": "participate",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "selectatask",
+            "type": "selectatask",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "selectitems",
+            "type": "selectitems",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "showinfo",
+            "type": "showinfo",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "update",
+            "type": "update",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updatestatus",
+            "type": "updatestatus",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "updatevotes",
+            "type": "updatevotes",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "withdraw",
+            "type": "withdraw",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "task",
+            "type": "task",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

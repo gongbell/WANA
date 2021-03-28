@@ -1,0 +1,264 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Apr 16 21:00:51 2019",
+    "version": "eosio::abi/1.1",
+    "structs": [
+        {
+            "name": "agreestruct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "sellerRetract",
+                    "type": "bool"
+                },
+                {
+                    "name": "buyerRetract",
+                    "type": "bool"
+                },
+                {
+                    "name": "intermediatorRetract",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "changeseller",
+            "base": "",
+            "fields": [
+                {
+                    "name": "newSeller",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "configstruct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "itemSet",
+                    "type": "bool"
+                },
+                {
+                    "name": "itemPaid",
+                    "type": "bool"
+                },
+                {
+                    "name": "itemReceived",
+                    "type": "bool"
+                },
+                {
+                    "name": "contractIsClosed",
+                    "type": "bool"
+                },
+                {
+                    "name": "contractRetracted",
+                    "type": "bool"
+                },
+                {
+                    "name": "buyerIsPaidBack",
+                    "type": "bool"
+                },
+                {
+                    "name": "balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "seller",
+                    "type": "name"
+                },
+                {
+                    "name": "buyer",
+                    "type": "name"
+                },
+                {
+                    "name": "intermediator",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "finalretract",
+            "base": "",
+            "fields": [
+                {
+                    "name": "buyerIsRight",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "init",
+            "base": "",
+            "fields": [
+                {
+                    "name": "seller",
+                    "type": "name"
+                },
+                {
+                    "name": "buyer",
+                    "type": "name"
+                },
+                {
+                    "name": "intermediator",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "itemreceived",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "itemstruct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "itemName",
+                    "type": "string"
+                },
+                {
+                    "name": "itemPrice",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "retract",
+            "base": "",
+            "fields": [
+                {
+                    "name": "retractor",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "setitem",
+            "base": "",
+            "fields": [
+                {
+                    "name": "itemName",
+                    "type": "string"
+                },
+                {
+                    "name": "itemPrice",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "withdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "to",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "changeseller",
+            "type": "changeseller",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "finalretract",
+            "type": "finalretract",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "init",
+            "type": "init",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "itemreceived",
+            "type": "itemreceived",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "retract",
+            "type": "retract",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setitem",
+            "type": "setitem",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "withdraw",
+            "type": "withdraw",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "agreement",
+            "type": "agreestruct",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "config",
+            "type": "configstruct",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "item",
+            "type": "itemstruct",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}

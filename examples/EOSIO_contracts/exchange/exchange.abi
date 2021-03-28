@@ -1,0 +1,145 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Jul  8 20:45:04 2019",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "cancelorder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "deposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "makeorder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "makewithdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "setadmin",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "seteosasset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "takeorder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "self",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "cancelorder",
+            "type": "cancelorder",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "deposit",
+            "type": "deposit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "makeorder",
+            "type": "makeorder",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "makewithdraw",
+            "type": "makewithdraw",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setadmin",
+            "type": "setadmin",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "seteosasset",
+            "type": "seteosasset",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "takeorder",
+            "type": "takeorder",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

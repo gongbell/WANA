@@ -1,0 +1,300 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "clnproposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "max_count",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "expire",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "post",
+            "base": "",
+            "fields": [
+                {
+                    "name": "poster",
+                    "type": "name"
+                },
+                {
+                    "name": "post_uuid",
+                    "type": "string"
+                },
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "reply_to_poster",
+                    "type": "name"
+                },
+                {
+                    "name": "reply_to_post_uuid",
+                    "type": "string"
+                },
+                {
+                    "name": "certify",
+                    "type": "bool"
+                },
+                {
+                    "name": "json_metadata",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "proposal_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "proposal_json",
+                    "type": "string"
+                },
+                {
+                    "name": "created_at",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "expires_at",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "propose",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "title",
+                    "type": "string"
+                },
+                {
+                    "name": "proposal_json",
+                    "type": "string"
+                },
+                {
+                    "name": "expires_at",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "status",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "content",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "status_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "unpost",
+            "base": "",
+            "fields": [
+                {
+                    "name": "poster",
+                    "type": "name"
+                },
+                {
+                    "name": "post_uuid",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "unvote",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "vote",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "vote",
+                    "type": "uint8"
+                },
+                {
+                    "name": "vote_json",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "vote_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "vote",
+                    "type": "uint8"
+                },
+                {
+                    "name": "vote_json",
+                    "type": "string"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "time_point_sec"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "clnproposal",
+            "type": "clnproposal",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "expire",
+            "type": "expire",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "post",
+            "type": "post",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "propose",
+            "type": "propose",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "status",
+            "type": "status",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unpost",
+            "type": "unpost",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unvote",
+            "type": "unvote",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "vote",
+            "type": "vote",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "proposal",
+            "type": "proposal_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "status",
+            "type": "status_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "vote",
+            "type": "vote_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}
