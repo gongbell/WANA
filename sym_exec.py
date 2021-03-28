@@ -9,16 +9,23 @@ import z3
 import copy
 import utils
 from random import randint, uniform
+from z3.z3util import get_vars
 from collections import defaultdict
 
+import emulator
 import logger
 import number
 from global_variables import global_vars
-from bug_analyzer import check_block_dependence
+from bug_analyzer import check_block_dependence_old
 from bug_analyzer import check_ethereum_delegate_call
 from bug_analyzer import check_ethereum_greedy
 from bug_analyzer import cur_state_analysis
+from bug_analyzer import check_mishandled_exception
 from runtime import *
+from bug_analyzer import library_function_dict
+from bug_analyzer import find_symbolic_in_solver
+import pprint
+
 
 
 # The variables will be used in exec() function.
@@ -136,7 +143,7 @@ class ModuleInstance:
         assert stack.len() == 0
         # z3.If the start function module.start is not empty, invoke the function instance.
         if module.start:
-            logger.debugln(f'Running start function {module.start}:')
+            logger.infoln(f'Running start function {module.start}:')
             call(self, module.start, store, stack)
 
     def allocate(
@@ -184,10 +191,10 @@ class ModuleInstance:
             exportinst = ExportInstance(export.name, externval)
             # set address of functions
             if export.name == 'apply' and export.kind == bin_format.extern_func:
-                logger.debugln('apply address:', export.desc)
+                logger.infoln('apply address:', export.desc)
                 global_vars.set_apply_function_addr(externval.addr)
             if export.name == 'main' and export.kind == bin_format.extern_func:
-                logger.debugln('main address:', export.desc)
+                logger.infoln('main address:', export.desc)
                 global_vars.set_main_function_addr(externval.addr)
             self.exports.append(exportinst)
 
@@ -230,18 +237,20 @@ def hostfunc_call(
         result: the list of result, only one elem.
     """
     f: HostFunc = store.funcs[address]
+
     valn = [stack.pop() for _ in f.functype.args][::-1]
     ctx = Ctx(store.mems)
     r = f.hostcode(ctx, *[e.n for e in valn])
     return [Value(f.functype.rets[0], r)]
 
 
-def fake_hostfunc_call(
+def fake_hostfunc_call_old(
         _: ModuleInstance,
         address: int,
         store: Store,
-        stack: Stack
-):
+        stack: Stack,
+        m
+):  
     """When the lib function is not exist, the hostfunc_call will crash, so the
     fake_hostfunc_call is useful because the analysis tool could not get the lib
     function.
@@ -257,10 +266,15 @@ def fake_hostfunc_call(
     """
     f: HostFunc = store.funcs[address]
     valn = [stack.pop() for _ in f.functype.args][::-1]
+    val0 = []
     # [TODO] A good method for return value.
+    if f.funcname:
+        logger.infoln(f'call eth.hostfunc : {f.funcname} {address}')
     if len(f.functype.rets) <= 0:
+        if f.funcname == 'getExternalBalance':
+            global_vars.add_flag_getExternalBalance()
         return []
-    if f.functype.rets[0] == bin_format.i32:
+    elif f.functype.rets[0] == bin_format.i32:
         r = randint(0, 0)
     elif f.functype.rets[0] == bin_format.i64:
         r = randint(0, 0)
@@ -270,6 +284,47 @@ def fake_hostfunc_call(
         r = uniform(0, 1)
     return [Value(f.functype.rets[0], r)]
 
+def fake_hostfunc_call(
+        _: ModuleInstance,
+        address: int,
+        store: Store,
+        stack: Stack,
+        memory: list
+):  
+    """When the lib function is not exist, the hostfunc_call will crash, so the
+    fake_hostfunc_call is useful because the analysis tool could not get the lib
+    function.
+
+    Args:
+        _: deprecated parameter.
+        address: the address of function.
+        store: store the functions.
+        stack: the current stack.
+
+    Returns:
+        result: the list of result, only one elem.
+    """
+    f: HostFunc = store.funcs[address]
+    valn = [stack.pop() for _ in f.functype.args][::-1]
+    val0 = []
+    if f.funcname:
+        logger.infoln(f'call eth.hostfunc : {f.funcname} {address}')
+    if f.funcname in emulator.realize_list_host:
+        # [TODO] Pass different parameters according to the situation
+        r = f.hostcode(valn, solver, memory)
+        if type(r) == list:
+            return []
+    elif len(f.functype.rets) <= 0:
+        return []
+    elif f.functype.rets[0] == bin_format.i32:
+        r = randint(0, 0)
+    elif f.functype.rets[0] == bin_format.i64:
+        r = randint(0, 0)
+    elif f.functype.rets[0] == bin_format.f32:
+        r = uniform(0, 1)
+    else:
+        r = uniform(0, 1)
+    return [Value(f.functype.rets[0], r)]
 
 def wasmfunc_call(
         module: ModuleInstance,
@@ -290,8 +345,36 @@ def wasmfunc_call(
     """
     f: WasmFunc = store.funcs[address]
     code = f.code.expr.data
+    flag_not_print = 0
+    flag_skip = 0
+    func_name = list()
+    if address - global_vars.library_offset > 32:
+        func_name = list(library_function_dict.keys())[list(library_function_dict.values()).index(address-global_vars.library_offset)]
+        global_vars.list_func.append(f'{func_name} {address} -> ')
+        logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
+
+        if func_name == '$callvalue':
+            if len(global_vars.list_func) > 2:
+                global_vars.flag_getCallValue_in_function = True
+
+    else:
+        global_vars.list_func.append(f' {address} -> ')
+        logger.infoln(f'wasmfunc call: {global_vars.list_func} ')
+        pass
+    
     valn = [stack.pop() for _ in f.functype.args][::-1]
     val0 = []
+
+    if func_name in emulator.realize_list_wasm:
+        r = emulator.wasmfunc_map['ethereum'][func_name](valn, solver, store)
+        if r:
+            flag_skip = 1
+            if len(r) == 4:
+                store.globals[module.globaladdrs[0]] = r[1]
+                store.globals[module.globaladdrs[1]] = r[2]
+                store.globals[module.globaladdrs[2]] = r[3]
+                r = [r[0]]
+
     for e in f.code.locals:
         if e == bin_format.i32:
             val0.append(Value.from_i32(0))
@@ -301,17 +384,35 @@ def wasmfunc_call(
             val0.append(Value.from_f32(0))
         else:
             val0.append(Value.from_f64(0))
+    
     frame = Frame(module, valn + val0, len(f.functype.rets), len(code))
-    stack.add(frame)
-    stack.add(Label(len(f.functype.rets), len(code)))
-    # An expression is evaluated relative to a current frame pointing to its containing module instance.
-    r, stack = exec_expr(store, frame, stack, f.code.expr, -1)
-    # Exit
-    while not isinstance(stack.pop(), Frame):
-        if stack.len() <= 0:
-            raise Exception('Signature mismatch in call!')
-    if any(id(elem) in global_vars.block_number_id_list for elem in valn):
-        global_vars.add_random_number_id(id(r[0]))
+
+    if flag_skip != 1:
+        stack.add(frame)
+        stack.add(Label(len(f.functype.rets), len(code)))
+        # An expression is evaluated relative to a current frame pointing to its containing module instance.
+        r, new_stack = exec_expr(store, frame, stack, f.code.expr, -1)
+
+        # Exit
+        while not isinstance(new_stack.pop(), Frame):
+            if new_stack.len() <= 0:
+                raise Exception('Signature mismatch in call!')
+    else:
+        # r需要仔细斟酌
+
+        new_stack = stack
+        
+    tmp = global_vars.list_func.pop()
+
+    logger.infoln(f'return func {tmp}')
+    logger.infoln(f'{global_vars.list_func}')
+    
+    flag_skip = 0
+    if flag_not_print == 1:
+        flag_not_print = 0
+        logger.lvl = global_vars.lvl
+
+    stack.data[:] = new_stack.data
     return r
 
 
@@ -322,6 +423,7 @@ def fake_wasmfunc_call(
         stack: Stack
 ):
     """The fake function call the internal wasm function.
+
 
     Args:
         module: the current module.
@@ -384,7 +486,8 @@ def fake_call(
         module: ModuleInstance,
         address: int,
         store: Store,
-        stack: Stack
+        stack: Stack,
+        m
 ):
     """The function call the internal wasm function or lib function. 
     It does not execute lib function and only return a valid random 
@@ -409,9 +512,13 @@ def fake_call(
     if isinstance(f, WasmFunc):
         if global_vars.detection_mode:
             return fake_wasmfunc_call(module, address, store, stack)
-        return wasmfunc_call(module, address, store, stack)
+        r = wasmfunc_call(module, address, store, stack)
+        return r
     if isinstance(f, HostFunc):
-        return fake_hostfunc_call(module, address, store, stack)
+        return fake_hostfunc_call(module, address, store, stack, m)
+
+# def set_stack_and_global()
+    # [TODO] 
 
 
 def spec_br(l: int, stack: Stack) -> int:
@@ -447,7 +554,7 @@ def init_variables(init_constraints: list = ()) -> None:
         recur_depth, loop_depth_dict, path_abort, path_depth, block_number_flag
     solver = z3.Solver()
     solver.add(init_constraints)
-    path_condition = []
+    path_condition = list(init_constraints)
     memory_address_symbolic_variable = {}
     recur_depth = 0
     loop_depth_dict = defaultdict(int)
@@ -484,13 +591,14 @@ def exec_expr(
         AttributeError: if the Label instance is read for getting value
         z3Exception: if the symbolic variable is converted
     """
-    global path_abort, path_depth, recur_depth, loop_depth_dict, block_number_flag, gas_cost
+    global path_abort, path_depth, recur_depth, loop_depth_dict, block_number_flag, gas_cost, path_condition
     branch_res = []
     module = frame.module
     if not expr.data:
         raise Exception('Empty init expr!')
 
     while True:
+        global_vars.cur_sum_pc += 1
         pc += 1
 
         if path_abort or pc >= len(expr.data):
@@ -503,8 +611,7 @@ def exec_expr(
 
         i = expr.data[pc]
 
-        logger.debugln(f'{str(i):<18} {stack}')
-        # log.println(f'{str(i):<18} {stack}')
+        logger.infoln(f'{str(i) :<18} {stack} {pc} {global_vars.cur_sum_pc}')
 
         # accumulate the gas cost to detect expensive fallback
         gas_cost += bin_format.gas_cost.get(i, 0)
@@ -521,6 +628,7 @@ def exec_expr(
         if bin_format.unreachable <= opcode <= bin_format.call_indirect:
             if opcode == bin_format.unreachable:
                 global_vars.unreachable_count += 1
+                raise Exception('unreachable')
                 break
                 # raise AssertionError('Unreachable opcode!')
             if opcode == bin_format.nop:
@@ -533,7 +641,8 @@ def exec_expr(
                 stack.add(Label(0, expr.composition[pc][0]))
                 continue
             if opcode == bin_format.if_:
-                c = stack.pop().n
+                object_c = stack.pop()
+                c = object_c.n
                 arity = int(i.immediate_arguments != bin_format.empty)
                 stack.add(Label(arity, expr.composition[pc][-1] + 1))
                 if utils.is_all_real(c):
@@ -547,14 +656,30 @@ def exec_expr(
                 else:
                     solver.push()
                     solver.add(c != 0)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    find_symbolic_in_solver(solver)
+                    check_mishandled_exception(solver, global_vars.cur_sum_pc)
+                    logger.debugln(solver)
+                    logger.infoln(f'left branch ({pc}: {i})')
                     path_depth += 1
+                    len_list_func = len(global_vars.list_func)
+                    len_path_condition = len(path_condition)
+                    global_vars.len_list_func = len(global_vars.list_func)
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
-                        return [0], global_vars.last_stack[-1]
+                        if utils.is_symbolic(c): #and c
+                            logger.debugln(f'recur {recur_depth}')
+
+                            solver.pop()
+                            # raise Exception('recur')
+                            # 有时候返回数字0回栈顶不是个好的选择，如果if判断的栈顶元素是位向量，且内容为0，那么我们就返回它本身
+
+                            return [object_c], global_vars.last_stack[-1]
+                        return [], global_vars.last_stack[-1]
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = copy.deepcopy(stack)
+                            new_stack.pop()
                         else:
                             # Execute the left branch
                             new_store = copy.deepcopy(store)
@@ -566,7 +691,10 @@ def exec_expr(
                             path_condition.append(c != 0)
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
+                            global_vars.sum_pc.append(global_vars.cur_sum_pc)
                             left_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
+
+                            logger.infoln(f'leave left branch{pc}')
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
@@ -576,20 +704,38 @@ def exec_expr(
                                 branch_res += left_branch_res
                                 if len(left_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], left_branch_res[:])
-                            path_condition.pop()
+                            path_condition = path_condition[:len_path_condition]
                     except TimeoutError:
-                        logger.debugln('Timeout in path exploration.')
+                        logger.infoln('Timeout in path exploration.')
                     except Exception as e:
-                        logger.debugln(f'Exception: {e}')
-                    path_depth -= 1
-                    solver.pop()
+                        logger.infoln(f'Exception: {e}')
+                        global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        global_vars.list_func = global_vars.list_func[:len_list_func]
+                        path_condition = path_condition[:len_path_condition]
+                        recur_depth -= 1
 
+                    m = store.mems[module.memaddrs[0]]
+                    list_solver = solver.units()
+                    vars = get_vars(list_solver[-1])
+                    for var in vars:
+                        if str(var) == 'callDataCopy_0':
+                            if len(global_vars.list_func) == 1:
+                                global_vars.clear_dict_symbolic_address()
+
+
+                    path_depth -= 1
+
+                    solver.pop()
                     solver.push()
                     solver.add(c == 0)
-                    logger.debugln(f'right branch ({pc}: {i})')
+                    find_symbolic_in_solver(solver)
+                    logger.debugln(solver)
+                    logger.infoln(f'right branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = stack
+                            new_stack.pop()
                         else:
                             # Execute the right branch
                             new_store = copy.deepcopy(store)
@@ -603,7 +749,10 @@ def exec_expr(
                             path_condition.append(c == 0)
                             recur_depth += 1
                             gas_cost -= bin_format.gas_cost.get(i, 0)
+                            global_vars.sum_pc.append(global_vars.cur_sum_pc)
                             right_branch_res, new_stack = exec_expr(new_store, new_frame, new_stack, new_expr, new_pc)
+                            logger.infoln(f'leave right branch {pc}')
+                            logger.debugln(new_stack)
                             gas_cost += bin_format.gas_cost.get(i, 0)
                             recur_depth -= 1
                             if path_abort:
@@ -617,11 +766,16 @@ def exec_expr(
                                 branch_res += right_branch_res
                                 if len(right_branch_res) <= 1:
                                     global_vars.add_cond_and_results(path_condition[:], right_branch_res[:])
-                            path_condition.pop()
+                            path_condition = path_condition[:len_path_condition]
                     except TimeoutError as e:
                         raise e
                     except Exception as e:
-                        logger.debugln(f'Exception: {e}')
+                        logger.infoln(f'Exception: {e}')
+                        global_vars.cur_sum_pc = global_vars.sum_pc.pop()
+                        global_vars.list_func = global_vars.list_func[:len_list_func]
+                        path_condition = path_condition[:len_path_condition]
+                        print('line:', e.__traceback__.tb_lineno)
+                        recur_depth -= 1
 
                     solver.pop()
                     if path_depth <= 0:
@@ -637,6 +791,7 @@ def exec_expr(
                     e = stack.data[i]
                     if isinstance(e, Label):
                         pc = e.continuation - 1
+                        logger.debugln(pc)
                         del stack.data[i]
                         break
                 continue
@@ -678,14 +833,16 @@ def exec_expr(
                 else:
                     solver.push()
                     solver.add(c == 0)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    find_symbolic_in_solver(solver)
+                    logger.infoln(f'left branch ({pc}: {i})')
                     path_depth += 1
                     if recur_depth > global_vars.BRANCH_DEPTH_LIMIT:
                         return branch_res, global_vars.last_stack[-1] if global_vars.last_stack != [] else None
                     global_vars.last_stack.append(stack)
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = stack
                         else:
                             # Execute the left branch
                             new_store = copy.deepcopy(store)
@@ -712,16 +869,18 @@ def exec_expr(
                     except TimeoutError:
                         raise
                     except Exception as e:
-                        logger.debugln('Exception')
+                        logger.infoln('Exception')
                     path_depth -= 1
                     solver.pop()
 
                     solver.push()
                     solver.add(c != 0)
-                    logger.debugln(f'left branch ({pc}: {i})')
+                    find_symbolic_in_solver(solver)
+                    logger.infoln(f'left branch ({pc}: {i})')
                     try:
                         if solver.check() == z3.unsat:
-                            logger.debugln(f'({pc}: {i}) infeasible path detected!')
+                            logger.infoln(f'({pc}: {i}) infeasible path detected!')
+                            new_stack = stack
                         else:
                             # Execute the right branch
                             new_store = copy.deepcopy(store)
@@ -752,7 +911,7 @@ def exec_expr(
                     except TimeoutError:
                         raise
                     except Exception as e:
-                        logger.debugln('Exception')
+                        logger.infoln('Exception')
 
                     solver.pop()
                     if path_depth <= 0:
@@ -783,8 +942,13 @@ def exec_expr(
                 break
 
             if opcode == bin_format.call:
-                r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack)
+                m = store.mems[module.memaddrs[0]]
+                r = fake_call(module, module.funcaddrs[i.immediate_arguments], store, stack, m)
                 stack.ext(r)
+
+                if global_vars.flag_revert > 0:
+                    global_vars.clear_flag_revert()
+                    raise Exception('call eth.revert')
 
                 # store the address of the block number or block prefix
                 if module.funcaddrs[i.immediate_arguments] in global_vars.tapos_block_function_addr:
@@ -792,14 +956,17 @@ def exec_expr(
 
                 # detect the send token call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.send_token_function_addr:
-                    check_block_dependence(block_number_flag)
+                    check_block_dependence_old(block_number_flag)
 
                 # detect the ethereum delegate call
                 if module.funcaddrs[i.immediate_arguments] in global_vars.call_delegate_addr:
                     check_ethereum_delegate_call(expr.data[pc - 1])
+                
+
 
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
+
                 continue
 
             if opcode == bin_format.call_indirect:
@@ -821,6 +988,7 @@ def exec_expr(
                 # there may exists random number bug, therefore count the function call
                 if tab.elem[idx] in global_vars.tapos_block_function_addr:
                     global_vars.add_random_number_id(id(r[0]))
+
 
                 # detect the ethereum greedy bug: is the function called a payable?
                 check_ethereum_greedy(module.funcaddrs[i.immediate_arguments])
@@ -855,8 +1023,10 @@ def exec_expr(
 
         if opcode == bin_format.set_local:
             if i.immediate_arguments >= len(frame.locals):
+                print("越界")
                 frame.locals.extend([Value.from_i32(0) for _ in range(i.immediate_arguments - len(frame.locals) + 1)])
-            frame.locals[i.immediate_arguments] = stack.pop()
+            tmp = stack.pop()
+            frame.locals[i.immediate_arguments] = tmp
             continue
 
         if opcode == bin_format.tee_local:
@@ -878,7 +1048,8 @@ def exec_expr(
         if bin_format.i32_load <= opcode <= bin_format.grow_memory:
             m = store.mems[module.memaddrs[0]]
             if bin_format.i32_load <= opcode <= bin_format.i64_load32_u:
-                logger.debugln(f'm.data state {m.data}')
+                logger.verboseln(f'm.data state {m.data}')
+                # logger.debugln(f'm.data state {m.data}')
                 a = stack.pop().n + i.immediate_arguments[1]
                 if utils.is_symbolic(a):
                     a = z3.simplify(a)
@@ -967,7 +1138,6 @@ def exec_expr(
                             m.data[memory_address_symbolic_variable[a]:memory_address_symbolic_variable[a] + 4])))
                         continue
                     continue
-
                 if a + bin_format.opcodes[opcode][2] > len(m.data):
                     path_abort = True
                     temp_stack = Stack()
@@ -985,7 +1155,12 @@ def exec_expr(
                 if opcode == bin_format.i64_load:
                     # [TODO] a better method to process out of index
                     a = a if 0 <= a <= len(m.data) - 8 else randint(0, len(m.data) - 8)
-                    stack.add(Value.from_i64(number.MemoryLoad.i64(m.data[a:a + 8])))
+                    if utils.is_symbolic(m.data[a]):
+                        tmp = z3.simplify(number.MemoryLoad.i64(m.data[a:a + 8]))
+                        # print(f'cccaaa{tmp}')
+                    else:
+                        tmp = number.MemoryLoad.i64(m.data[a:a + 8])
+                    stack.add(Value.from_i64(tmp))
                     continue
 
                 # [TODO] Using some approaches to implement float byte-store.
@@ -1029,6 +1204,7 @@ def exec_expr(
                 continue
 
             if bin_format.i32_store <= opcode <= bin_format.i64_store32:
+                # v is value, a is address
                 v = stack.pop().n
                 a = stack.pop().n + i.immediate_arguments[1]
                 if utils.is_symbolic(a):
@@ -1103,6 +1279,8 @@ def exec_expr(
                     continue
                 if opcode == bin_format.i64_store:
                     m.data[a:a + 8] = number.MemoryStore.pack_i64(v)
+                    if utils.is_symbolic(v):
+                        global_vars.add_dict_symbolic_address(v, a)
                     continue
 
                 if opcode == bin_format.f32_store:
@@ -1532,6 +1710,7 @@ def exec_expr(
                 elif not utils.is_all_real(b):
                     solver.push()
                     solver.add(z3.Not(b == 0))
+                    find_symbolic_in_solver(solver)
                     if utils.check_sat(solver) == z3.unsat:
                         logger.println('Integer divide by zero!')
                         b = 1
@@ -1569,6 +1748,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 32), utils.to_symbolic(b, 32)
                     solver.push()
                     solver.add((a / b) < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
                     computed = z3.simplify(sign * (a / b))
@@ -1592,6 +1772,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 32), utils.to_symbolic(b, 32)
                     solver.push()
                     solver.add(a < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     solver.pop()
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
@@ -1738,6 +1919,7 @@ def exec_expr(
                 elif not utils.is_all_real(b):
                     solver.push()
                     solver.add(z3.Not(b == 0))
+                    find_symbolic_in_solver(solver)
                     if utils.check_sat(solver) == z3.unsat:
                         logger.println('Integer divide by zero!')
                         b = 1
@@ -1775,6 +1957,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 64), utils.to_symbolic(b, 64)
                     solver.push()
                     solver.add((a / b) < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
                     computed = z3.simplify(sign * (a / b))
@@ -1798,6 +1981,7 @@ def exec_expr(
                     a, b = utils.to_symbolic(a, 64), utils.to_symbolic(b, 64)
                     solver.push()
                     solver.add(a < 0)
+                    find_symbolic_in_solver(solver)
                     sign = -1 if utils.check_sat(solver) == z3.sat else 1
                     solver.pop()
                     a, b = utils.sym_abs(a), utils.sym_abs(b)
@@ -2099,7 +2283,7 @@ def exec_expr(
                 if utils.is_all_real(a):
                     stack.add(Value.from_i64(number.int2u32(a)))
                 else:
-                    stack.add(Value.from_i64(z3.ZeroExt(a, 32)))
+                    stack.add(Value.from_i64(z3.ZeroExt(32, a)))
                 continue
             if opcode == bin_format.i64_trunc_sf32:
                 if a > 2 ** 63 - 1 or a < -2 ** 63:
@@ -2165,4 +2349,5 @@ def exec_expr(
                 stack.add(Value.from_f64(number.i642f64(a)))
                 continue
             continue
+
     return [stack.pop() for _ in range(frame.arity)][::-1], stack

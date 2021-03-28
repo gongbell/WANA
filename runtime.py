@@ -82,10 +82,11 @@ class HostFunc(FunctionInstance):
         hostcode: the native code reference
     """
 
-    def __init__(self, functype: structure.FunctionType, hostcode: typing.Callable):
+    def __init__(self, functype: structure.FunctionType, hostcode: typing.Callable, funcname: str):
         super().__init__()
         self.functype = functype
         self.hostcode = hostcode
+        self.funcname = funcname
 
 
 class TableInstance:

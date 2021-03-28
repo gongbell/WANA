@@ -116,5 +116,13 @@ def gen_symbolic_args(func: 'instance.FunctionInstance'):
     return symbolic_params
 
 
-if __name__ == '__main__':
-    print(eos_abi_to_int('eosio.token'))
+def gen_symbolic_value(var_type, name):
+    if var_type == bin_format.i32:
+        return z3.BitVec(name, 32)
+    if var_type == bin_format.i64:
+        return z3.BitVec(name, 64)
+    if var_type == bin_format.f32:
+        return z3.FP(f'f32_{i}', z3.Float32())
+    if var_type == bin_format.f64:
+        return z3.FP(name, z3.Float64())
+    raise TypeError('Unsupported variable type')

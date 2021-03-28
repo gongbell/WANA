@@ -7,10 +7,10 @@ For simplicity, it only contain the unique object global_variables_instance of c
 GlobalVariables.
 """
 import utils
-
+import z3
 
 class GlobalVariables:
-    def __init__(self, contract_type: str = 'eos') -> None:
+    def __init__(self, contract_type: str = 'eos', lvl: int = 0, simple: bool = False) -> None:
         # program counter
         self.pc = 0
 
@@ -76,13 +76,87 @@ class GlobalVariables:
 
         # loop depth limit
         self.LOOP_DEPTH_LIMIT = 10
-        self.BRANCH_DEPTH_LIMIT = 100000
+        self.BRANCH_DEPTH_LIMIT = 50
 
         # unreachable count
         self.unreachable_count = 0
 
+        # jugde if simple execute
+        self.is_simple = simple
+
+        # offset of library func in wasm and library 
+        self.library_offset = 0
+
+        # flag to simulate eth.callDataCopy
+        self.flag_callDataCopy = 0
+        self.num_callDataCopy = 0
+
+        # flag to simulate eth.getCallValue
+        self.flag_getCallValue = 0
+        self.flag_getCallValue_in_function = False
+        self.num_getCallValue = 0
+
+        # flag to simulate eth.revert
+        self.flag_revert = 0
+
+        # flag to simulate eth.getCallDataSize, 0 -> symbolic, 1 -> real(>4)
+        self.flag_getCallDataSize = 0
+
+        # flag to simulate eth.getCaller
+        self.flag_getCaller = 0
+        self.num_getCaller = 0
+
+        # flag to simulate keccak256
+        self.flag_keccak256 = 0
+        self.num_keccak256 = 0
+
+        # flag to simulate eth.getExternalBalance
+        self.flag_getExternalBalance = 0
+        self.num_getExternalBalance = 0
+
+
+        # flag to detect mishandled exception
+        self.flag_call_mishandled_exception = 0
+        self.call_symbolic_ret = dict()
+
+        # simulate $div and $mul
+        self.num_div = 0
+        self.num_mul = 0
+
+
+        # simulate eth.storageLoad
+        self.num_storageLoad = 0
+
+        # sum of pc 
+        self.sum_pc = list()
+        self.cur_sum_pc = 0
+
+        self.lvl = lvl
+
+        self.list_func = list()
+        self.len_list_func = 0
+
+        # to manage symbolic_num
+        self.flag_num_host = 0
+        self.flag_num_wasm = 0
+
+        # update check block dependency
+        self.dict_block_solver = dict()
+
+        # Record the initial memory location of the symbol value
+        # Also record the converted symbol value
+        self.dict_symbolic_address = dict()
+
+        # save symbolic of eth.storageStore, use it to detect reentrancy
+        self.list_storageStore = list()
+
+        self.ethereum_reentrancy_detection = 0
+
+
+
+
     def re_init(self) -> None:
-        self.__init__(self.contract_type)
+        self.__init__(self.contract_type, self.lvl, self.is_simple)
 
     def clear_count(self) -> None:
         self.block_dependency_count = 0
@@ -170,5 +244,137 @@ class GlobalVariables:
     def find_ethereum_greedy(self) -> None:
         self.ethereum_greedy = 1
 
+    def add_flag_callDataCopy(self) -> None:
+        self.flag_callDataCopy += 1
+
+    def clear_flag_callDataCopy(self) -> None:
+        self.flag_callDataCopy = 0
+
+    def add_num_callDataCopy(self) -> None:
+        self.num_callDataCopy += 1
+
+    def clear_num_callDataCopy(self) -> None:
+        self.num_callDataCopy = 0
+
+    def add_flag_keccak256(self) -> None:
+        self.flag_keccak256 += 1
+
+    def clear_flag_keccak256(self) -> None:
+        self.flag_keccak256 = 0
+
+    def add_num_keccak256(self) -> None:
+        self.num_keccak256 += 1
+
+    def clear_num_keccak256(self) -> None:
+        self.num_keccak256 = 0
+
+    def add_flag_getCallValue(self) -> None:
+        self.flag_getCallValue += 1
+
+    def clear_flag_getCallValue(self) -> None:
+        self.flag_getCallValue = 0
+
+    def add_num_getCallValue(self) -> None:
+        self.num_getCallValue += 1
+
+    def clear_num_getCallValue(self) -> None:
+        self.num_getCallValue = 0
+
+    def change_flag_getCallValue_in_function(self) -> None:
+        self.flag_getCallValue_in_function = not self.flag_getCallValue_in_function
+
+    def add_flag_revert(self) -> None:
+        self.flag_revert = 1
+
+    def clear_flag_revert(self) -> None:
+        self.flag_revert = 0
+
+    def add_flag_getCaller(self) -> None:
+        self.flag_getCaller += 1
+
+    def clear_flag_getCaller(self) -> None:
+        self.flag_getCaller = 0
+
+    def add_num_getCaller(self) -> None:
+        self.num_getCaller += 1
+
+    def clear_num_getCaller(self) -> None:
+        self.num_getCaller = 0
+
+    def add_flag_getCallDataSize(self) -> None:
+        self.flag_getCallDataSize += 1
+
+    def clear_flag_getCallDataSize(self) -> None:
+        self.flag_getCallDataSize = 0
+    
+    def add_num_div(self) -> None:
+        self.num_div += 1
+
+    def clear_num_div(self) -> None:
+        self.num_div = 0
+
+    def add_num_mul(self) -> None:
+        self.num_mul += 1
+
+    def clear_num_mul(self) -> None:
+        self.num_mul = 0
+
+    def add_num_storageLoad(self) -> None:
+        self.num_storageLoad += 1
+
+    def clear_num_storageLoad(self) -> None:
+        self.num_storageLoad = 0
+
+    def add_flag_getExternalBalance(self) -> None:
+        self.flag_getExternalBalance += 1
+
+    def clear_flag_getExternalBalance(self) -> None:
+        self.flag_getExternalBalance = 0
+
+    def add_num_getExternalBalance(self) -> None:
+        self.num_getExternalBalance += 1
+
+    def clear_num_getExternalBalance(self) -> None:
+        self.num_getExternalBalance = 0
+
+    def add_flag_num_host(self) -> int:
+        self.flag_num_host += 1
+        return self.flag_num_host - 1
+
+    def add_flag_num_wasm(self) -> int:
+        self.flag_num_wasm += 1
+        return self.flag_num_wasm - 1
+
+    def add_dict_block_solver(self, key, value):
+        if isinstance(value, z3.Solver):
+            self.dict_block_solver[key] = list()
+            self.dict_block_solver[key].append(value)
+        elif utils.is_symbolic(value):
+            self.dict_block_solver[key].append(value)
+        elif isinstance(value, int):
+            self.dict_block_solver[key].append(value)
+
+    def add_dict_symbolic_address(self, key, value):
+        self.dict_symbolic_address[key] = value
+
+    def find_dict_root(self, key):
+        dic = dict()
+        if not (key in self.dict_symbolic_address):
+            return 
+        if isinstance(self.dict_symbolic_address[key], list):
+            for item in self.dict_symbolic_address[key]:
+                tmp = self.find_dict_root(item)
+                if tmp:
+                    dic.update(tmp)
+            return dic
+        else:
+            dic[key] = self.dict_symbolic_address[key]
+            return dic
+
+    def clear_dict_symbolic_address(self):
+        self.dict_symbolic_address.clear()
+
+    def find_reentrancy_detection(self) -> None:
+        self.ethereum_reentrancy_detection +=1
 
 global_vars = GlobalVariables()

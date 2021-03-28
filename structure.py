@@ -957,50 +957,50 @@ class Module:
                 raise Exception('Invalid section size!')
             if section_id == bin_format.custom_section:
                 custom_section = CustomSection.from_reader(io.BytesIO(data))
-                logger.debugln(f'{bin_format.section[section_id][0]:>9} {custom_section.name}')
+                logger.infoln(f'{bin_format.section[section_id][0]:>9} {custom_section.name}')
             elif section_id == bin_format.type_section:
                 type_section = TypeSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(type_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.types = type_section.vec
             elif section_id == bin_format.import_section:
                 import_section = ImportSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(import_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] ..{e}')
                 mod.imports = import_section.vec
             elif section_id == bin_format.function_section:
                 function_section = FunctionSection.from_reader(io.BytesIO(data))
                 num_imported_funcs = sum(1 for _ in filter(lambda ins: ins.kind == bin_format.extern_func, mod.imports))
                 for i, e in enumerate(function_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] func={num_imported_funcs + i} sig={e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] func={num_imported_funcs + i} sig={e}')
             elif section_id == bin_format.table_section:
                 table_section = TableSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(table_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.tables = table_section.vec
             elif section_id == bin_format.memory_section:
                 memory_section = MemorySection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(memory_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.mems = memory_section.vec
             elif section_id == bin_format.global_section:
                 global_section = GlobalSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(global_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.globals = global_section.vec
             elif section_id == bin_format.export_section:
                 export_section = ExportSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(export_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.exports = export_section.vec
             elif section_id == bin_format.start_section:
                 start_section = StartSection.from_reader(io.BytesIO(data))
-                logger.debugln(f'{bin_format.section[section_id][0]:>12} {start_section.start_function}')
+                logger.infoln(f'{bin_format.section[section_id][0]:>12} {start_section.start_function}')
                 mod.start = start_section.start_function.funcidx
             elif section_id == bin_format.element_section:
                 element_section = ElementSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(element_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.elem = element_section.vec
             elif section_id == bin_format.code_section:
                 code_section = CodeSection.from_reader(io.BytesIO(data))
@@ -1009,24 +1009,24 @@ class Module:
                     for e in instrs:
                         a = f'           | {" " * prefix}{bin_format.opcodes[e.code][0]}'
                         if e.code in [bin_format.block, bin_format.loop, bin_format.if_]:
-                            logger.debugln(f'{a} {bin_format.blocktype[e.immediate_arguments][0]}')
+                            logger.infoln(f'{a} {bin_format.blocktype[e.immediate_arguments][0]}')
                             prefix += 2
                         elif e.code == bin_format.end:
                             prefix -= 2
                             a = f'           | {" " * prefix}{bin_format.opcodes[e.code][0]}'
-                            logger.debugln(f'{a}')
+                            logger.infoln(f'{a}')
                         elif e.immediate_arguments is None:
-                            logger.debugln(f'{a}')
+                            logger.infoln(f'{a}')
                         elif isinstance(e.immediate_arguments, list):
-                            logger.debugln(
+                            logger.infoln(
                                 f'{a} {" ".join([str(e) for e in e.immediate_arguments])}')
                         else:
-                            logger.debugln(f'{a} {e.immediate_arguments}')
+                            logger.infoln(f'{a} {e.immediate_arguments}')
 
                 num_imported_funcs = sum(1 for _ in filter(lambda ins: ins.kind == bin_format.extern_func, mod.imports))
                 for i, e in enumerate(code_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] func={num_imported_funcs + i} {e}')
-                    printex(e.expr.data)
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] func={num_imported_funcs + i} {e}')
+                    # printex(e.expr.data)
                     func = Function()
                     func.typeidx = function_section.vec[i]
                     func.locals = e.locals
@@ -1035,9 +1035,9 @@ class Module:
             elif section_id == bin_format.data_section:
                 data_section = DataSection.from_reader(io.BytesIO(data))
                 for i, e in enumerate(data_section.vec):
-                    logger.debugln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
+                    logger.infoln(f'{bin_format.section[section_id][0]:>9}[{i}] {e}')
                 mod.data = data_section.vec
             else:
                 raise Exception('Invalid section id!')
-        logger.debugln('')
+        logger.infoln('')
         return mod

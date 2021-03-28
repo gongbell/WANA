@@ -10,6 +10,8 @@ import logger
 import structure
 import bin_format
 import z3
+import number
+from z3.z3util import get_vars
 from runtime import Label, Value
 from runtime import WasmFunc
 from global_variables import global_vars
@@ -72,7 +74,7 @@ def locate_transfer(vm, name):
         except AssertionError as e:
             logger.println(f'unreachable transfer: {e}')
         except SystemExit as e:
-            logger.debugln(f'transfer found')
+            logger.infoln(f'transfer found')
     global_vars.sym_exec()
 
 
@@ -99,33 +101,196 @@ def function_analysis(vm) -> None:
                 if instr.code == bin_format.call and vm.module_instance.funcaddrs[instr.immediate_arguments] \
                         in global_vars.call_delegate_addr:
                     if expr.data[i - 1] not in (bin_format.i32_const, bin_format.i64_const):
-                        global_vars.find_ethereum_delegate_call()
+                        # global_vars.find_ethereum_delegate_call()
+                        pass
+        global_vars.library_offset = len(vm.store.funcs) - 125 - library_function_dict['offset'] - 1
+        detect_greedy(vm)
+        check_block_dependence_static(vm)
 
+def detect_greedy(vm) -> None:
+    """This function is used to detect greedy vulnerabilities
+
+    Args:
+        vm: the virtual include env and structure.
+    """
+    global library_function_dict
+    funcs = vm.module.funcs
+    # if the analyzed contract is ethereum
+    if global_vars.contract_type == 'ethereum':
         # 1. Count the non payable functions, finally get the number of payable functions.
         # 2. If there are payable functions in the contract but no *ethereum.call*, greedy exists.
         non_payable_count = 0
         offset = len(vm.module.imports)
         main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
+        exist_send_or_transfer = False
+        payable_function = 0 
         for index, func in enumerate(funcs):
+            if exist_send_or_transfer:
+                break
+            expr = func.expr
+            if index == main_index:
+                pc_start_main_func = 0
+                pc_end_main_func = 0
+                pc_start_fallback = 0
+                pc_end_fallback = 0
+                for i, instr in enumerate(expr.data):
+                    if instr.code == bin_format.i64_const and instr.immediate_arguments > 10000000:
+                        pc_start_main_func = i
+                    elif instr.code == bin_format.else_:
+                        pc_end_main_func = i
+                    elif call_library_function(instr, global_vars.library_offset, '$iszero'):
+                        pc_start_fallback = i
+                    elif call_library_function(instr, global_vars.library_offset, '$stop'):
+                        pc_end_fallback = i
+                    if pc_start_main_func > 0 and pc_end_main_func > 0:
+                        if check_function_payable(expr.data[pc_start_main_func:pc_end_main_func+1]):
+                            payable_function += 1
+                        pc_start_main_func = 0
+                        pc_end_main_func = 0
+                    if pc_start_fallback > 0 and pc_end_fallback > 0:
+                        if check_function_payable(expr.data[pc_start_fallback:pc_end_fallback+1]):
+                            payable_function += 1
+                        pc_start_fallback = 0
+                        pc_end_fallback = 0
+                continue
+            if len(funcs) - index <= 125:
+                continue
+            is_payable = True
+            for i, instr in enumerate(expr.data):
+                if call_library_function(instr, global_vars.library_offset, '$call'):
+                    exist_send_or_transfer = True 
+                non_payable_count += 1
+                is_payable = False
+                    # break
+            if is_payable:
+                global_vars.ETH_payable_function_address_set.add(index + offset)
+        if not exist_send_or_transfer and payable_function:
+            global_vars.ethereum_greedy = 1
+
+def check_block_dependence_static(vm) -> None:
+    """This function is used to detect block dependence vulnerabilities, 
+    This function uses static analysis of the instruction sequence to detect vulnerabilities
+
+    Args:
+        vm: the virtual include env and structure.
+    """
+    global library_function_dict
+    funcs = vm.module.funcs
+    # if the analyzed contract is ethereum
+    if global_vars.contract_type == 'ethereum':
+        offset = len(vm.module.imports)
+        main_index = global_vars.main_function_address - len(vm.store.funcs) + len(funcs)
+        exist_timestamp_or_number = False
+        for index, func in enumerate(funcs):
+            if exist_timestamp_or_number:
+                break
             if index == main_index:
                 continue
             expr = func.expr
-            is_payable = True
+            if len(funcs) - index <= 125:
+                continue
             for i, instr in enumerate(expr.data):
-                if (instr.code == bin_format.call and vm.module_instance.funcaddrs[
-                    instr.immediate_arguments] in global_vars.get_call_value_addr
-                        and _is_non_payable_function(expr, i)):
-                    non_payable_count += 1
-                    is_payable = False
+                if call_library_function(instr, global_vars.library_offset, '$number') or call_library_function(instr, global_vars.library_offset, '$timestamp'):
+                    exist_timestamp_or_number = True 
                     break
-            if is_payable:
-                global_vars.ETH_payable_function_address_set.add(index + offset)
+        if exist_timestamp_or_number:
+            # global_vars.block_dependency_count += 1
+            pass
 
-        if non_payable_count <= len(funcs) - 2 and not global_vars.send_token_function_addr:
-            global_vars.cannot_send_ETH = True
+def find_symbolic_in_solver(solver:'solver'):
+    """This function is used to separate the symbol value from the solver, and add it in dict of global_vars 
 
+    Args:
+        solver: current z3 solver.
+    """
+    list_solver = solver.units()
+    r = str()
+    for ret in global_vars.dict_block_solver:
+        for l in list_solver:
+            if str(l).find(str(ret)) != -1:
+                r = ret
+    if r:
+        global_vars.add_dict_block_solver(r, 1)
 
-def check_block_dependence(block_number_flag: bool) -> None:
+def check_block_dependence_dynamic(solver:'solver'):
+    """This function is used to detect block dependence vulnerabilities, 
+
+    Args:
+        vm: the virtual include env and structure.
+    """
+    if global_vars.dict_block_solver:
+        for ret in global_vars.dict_block_solver:
+            if len(global_vars.dict_block_solver[ret]) < 2:
+                continue
+            if str(global_vars.dict_block_solver[ret][0]) == str(solver):
+                global_vars.block_dependency_count += 1
+                global_vars.dict_block_solver.pop(ret)
+                break
+                
+    else:
+        pass
+
+def check_reentrancy_bug(memory, solver, path_condition:list = None):
+    """This function is used to detect reentrancy vulnerabilities, 
+
+    Args:
+        path_condition: current path condition
+        memory: current memory of Wasm
+        solver: current z3 solver
+    """
+    list_solver = solver.units()
+    for expr in list_solver: 
+        if not z3.is_expr(expr): 
+            continue
+        vars = get_vars(expr)
+        flag_empty = 0
+        for var in vars:
+            if var in global_vars.dict_symbolic_address: 
+                flag_empty += 1
+                tmp_dict = global_vars.find_dict_root(var)
+                if not tmp_dict:
+                    continue
+                for item in tmp_dict: 
+                    if item in global_vars.list_storageStore:
+                        continue
+                    else:
+                        global_vars.find_reentrancy_detection()
+        if flag_empty == 0:
+            global_vars.find_reentrancy_detection()
+
+def call_library_function(instr: structure.Instruction, library_offset: int, library_func_name: str) -> bool:
+    """Check whether the current instruction is *call* and whether its parameter is a specific library function
+
+    Args:
+        instr: the instruction now check
+        library_offset: offset between simple functions and library functions 
+        library_func_name: name of library function being compared
+    """
+    global library_function_dict
+    if instr.code == bin_format.call and instr.immediate_arguments == (library_offset + library_function_dict[library_func_name]):
+        return True
+    else:
+        return False
+
+def check_function_payable(instrs:list) -> bool:
+    """
+    Check whether the function contains the keyword 'payable'
+
+    Args:
+        instrs: the instructions of function
+    """
+    exist_callvalue = False
+    exist_revert = False
+    for instr in instrs:
+        if call_library_function(instr, global_vars.library_offset, '$callvalue'):
+            exist_callvalue = True
+        if call_library_function(instr, global_vars.library_offset, '$revert'):
+            exist_revert = True
+        if exist_callvalue and exist_revert:
+            return False
+    return True
+
+def check_block_dependence_old(block_number_flag: bool) -> None:
     """During symbolic execution, it is called when the 
     transfer call is satisfied and the parameters used 
     in the call are related to the block information.
@@ -148,8 +313,27 @@ def check_ethereum_delegate_call(instr: 'Instruction') -> None:
     the correctness of the analysis.
     """
     if instr in (bin_format.i32_const, bin_format.i64_const):
-        global_vars.find_ethereum_delegate_call()
+        # global_vars.find_ethereum_delegate_call()
+        pass
 
+def check_mishandled_exception(solver: 'solver', pc: int) -> None:
+    """This function is used to detect mishandled exception
+
+    Args:
+        solver: current z3 solver
+        pc: current pc of all
+    """
+    if len(global_vars.call_symbolic_ret) > 0:
+        list_solver = solver.units()
+        r = str()
+        for ret in global_vars.call_symbolic_ret:
+            if pc - global_vars.call_symbolic_ret[ret] > 300:
+                break
+            for l in list_solver:
+                if str(l).find(ret) != -1:
+                    r = ret
+        if r:
+            global_vars.call_symbolic_ret.pop(r)
 
 def detect_forged_transfer(store, frame, index):
     """Forge transfer notification vulnerability analysis function, and it is called
@@ -558,3 +742,132 @@ N_call_instructions_sequence = [
     [bin_format.set_local, None],
     [bin_format.i64_const, 0]
 ]
+
+library_function_dict = {
+    'offset' : 33,
+    '$add_carry' : 34,
+    '$add' : 35,
+    '$sub' : 36,
+    '$sub320' : 37,
+    '$sub512' : 38,
+    '$mul_64x64_128' : 39,
+    '$mul_128x128_256' : 40,
+    '$mul_256x256_512' : 41,
+    '$mul' : 42,
+    '$div' : 43,
+    '$sdiv' : 44,
+    '$mod' : 45,
+    '$mod320' : 46,
+    '$mod512' : 47,
+    '$smod' : 48,
+    '$exp' : 49,
+    '$addmod' : 50,
+    '$mulmod' : 51,
+    '$signextend' : 52,
+    '$bit_negate' : 53,
+    '$split' : 54,
+    '$shl_internal' : 55,
+    '$shr_internal' : 56,
+    '$shl320_internal' : 57,
+    '$shr320_internal' : 58,
+    '$shl512_internal' : 59,
+    '$shr512_internal' : 60,
+    '$byte' : 61,
+    '$xor' : 62,
+    '$or' : 63,
+    '$and' : 64,
+    '$not' : 65,
+    '$shl_single' : 66,
+    '$shl' : 67,
+    '$shr_single' : 68,
+    '$shr' : 69,
+    '$sar' : 70,
+    '$iszero' : 71,
+    '$iszero256' : 72,
+    '$iszero320' : 73,
+    '$iszero512' : 74,
+    '$eq' : 75,
+    '$cmp' : 76,
+    '$lt_320x320_64' : 77,
+    '$lt_512x512_64' : 78,
+    '$lt_256x256_64' : 79,
+    '$lt' : 80,
+    '$gte_256x256_64' : 81,
+    '$gte_320x320_64' : 82,
+    '$gte_512x512_64' : 83,
+    '$gt' : 84,
+    '$slt' : 85,
+    '$sgt' : 86,
+    '$u256_to_u128' : 87,
+    '$u256_to_i64' : 88,
+    '$u256_to_i32' : 89,
+    '$u256_to_byte' : 90,
+    '$u256_to_i32ptr' : 91,
+    '$to_internal_i32ptr' : 92,
+    '$u256_to_address' : 93,
+    '$bswap16' : 94,
+    '$bswap32' : 95,
+    '$bswap64' : 96,
+    '$address' : 97,
+    '$balance' : 98,
+    '$selfbalance' : 99,
+    '$chainid' : 100,
+    '$origin' : 101,
+    '$caller' : 102,
+    '$callvalue' : 103,
+    '$calldataload' : 104,
+    '$calldatasize' : 105,
+    '$calldatacopy' : 106,
+    '$codesize' : 107,
+    '$codecopy' : 108,
+    '$datacopy' : 109,
+    '$gasprice' : 110,
+    '$extcodesize_internal' : 111,
+    '$extcodesize' : 112,
+    '$extcodehash' : 113,
+    '$extcodecopy' : 114,
+    '$returndatasize' : 115,
+    '$returndatacopy' : 116,
+    '$blockhash' : 117,
+    '$coinbase' : 118,
+    '$timestamp' : 119,
+    '$number' : 120,
+    '$difficulty' : 121,
+    '$gaslimit' : 122,
+    '$mload' : 123,
+    '$mload_internal' : 124,
+    '$mstore' : 125,
+    '$mstore_internal' : 126,
+    '$mstore_address' : 127,
+    '$mstore8' : 128,
+    '$msize' : 129,
+    '$sload' : 130,
+    '$sstore' : 131,
+    '$gas' : 132,
+    '$log0' : 133,
+    '$log1' : 134,
+    '$log2' : 135,
+    '$log3' : 136,
+    '$log4' : 137,
+    '$create' : 138,
+    '$call' : 139,
+    '$callcode' : 140,
+    '$delegatecall' : 141,
+    '$staticcall' : 142,
+    '$create2' : 143,
+    '$selfdestruct' : 144,
+    '$return' : 145,
+    '$revert' : 146,
+    '$invalid' : 147,
+    '$stop' : 148,
+    '$keccak256' : 149,
+    '$or_bool' : 150,
+    '$or_bool_320' : 151,
+    '$or_bool_512' : 152,
+    '$save_temp_mem_32' : 153,
+    '$restore_temp_mem_32' : 154,
+    '$save_temp_mem_64' : 155,
+    '$restore_temp_mem_64' : 156,
+    '$pop' : 157,
+    '$memoryguard' : 158
+}

@@ -13,6 +13,7 @@ import traceback
 from typing import List
 from func_timeout import func_timeout
 from func_timeout import FunctionTimedOut
+import time 
 
 import bin_format
 import sym_exec
@@ -24,6 +25,7 @@ from runtime import WasmFunc
 from bug_analyzer import locate_transfer, function_analysis, detect_fake_eos
 from bug_analyzer import fake_eos_analysis
 from bug_analyzer import count_instruction
+from emulator import hostfunc_map
 
 
 class Runtime:
@@ -76,8 +78,7 @@ class Runtime:
                     global_vars.add_get_call_value_addr(len(self.store.funcs))
                 if e.module in ('ethereum',) and e.name in ('revert',):
                     global_vars.add_revert_addr(len(self.store.funcs))
-
-                a = sym_exec.HostFunc(self.module.types[e.desc], None)
+                a = sym_exec.HostFunc(self.module.types[e.desc], hostfunc_map[e.module][e.name], e.name)
                 self.store.funcs.append(a)
                 externvals.append(sym_exec.ExternValue(e.kind, len(self.store.funcs) - 1))
                 continue
@@ -126,7 +127,7 @@ class Runtime:
         """
         # Invoke a function denoted by the function address with the provided arguments.
         func_addr = self.func_addr(name)
-        logger.debugln(f'Running function {name}):')
+        logger.infoln(f'Running function {name}):')
         r = self.exec_by_address(func_addr, args)
         if r:
             return r
@@ -176,7 +177,7 @@ class Runtime:
             args[i] = sym_exec.Value(e, args[i])
         stack = sym_exec.Stack()
         stack.ext(args)
-        logger.debugln(f'Running function address {address}({", ".join([str(e) for e in args])}):')
+        logger.infoln(f'Running function address {address}({", ".join([str(e) for e in args])}):')
         r = sym_exec.call(self.module_instance, address, self.store, stack, init_constraints)
         if r:
             return r
@@ -186,7 +187,7 @@ class Runtime:
         """Executing all functions of the module.
         """
         for e in self.module_instance.exports:
-            logger.debugln(e.name, e.value.addr)
+            logger.infoln(e.name, e.value.addr)
             if e.value.extern_type == bin_format.extern_func:
                 try:
                     self.exec_by_address(e.value.addr, self._get_symbolic_params(e.value.addr))
@@ -296,13 +297,25 @@ def parse_arguments():
         '--timeout',
         help='Timeout for analysis using z3 in ms.',
         type=int,
-        default=20
+        default=2000
     )
     parser.add_argument(
         '-s',
         '--sol',
         action='store_true',
         help='Analyze the solidity smart contract'
+    )
+    parser.add_argument(
+        '-l',
+        '--lvl',
+        type = int,
+        default=0,
+        help='logger.lvl'
+    )
+    parser.add_argument(
+        '--simple',
+        action='store_true',
+        help='simple execute wasm'
     )
     return parser.parse_args()
 
@@ -317,26 +330,38 @@ def main():
     if args.sol:
         global_vars.contract_type = 'ethereum'
 
+    if args.lvl:
+        logger.lvl = global_vars.lvl = args.lvl
+
+    if args.simple:
+        global_vars.is_simple = args.simple
+
+    start = float()
+    end = float()
     # Execute a export functions of wasm
     if args.execute:
         try:
+            start = time.perf_counter()
             func_timeout(args.timeout, execution_and_analyze, args=(args.execute,))
+            end = time.perf_counter()
         except FunctionTimedOut:
             logger.println(f'{args.execute}: time out')
+            end = time.perf_counter()
+            after_sym_exec('')
         except Exception as e:
-            logger.debugln(traceback.format_exc())
+            logger.infoln(traceback.format_exc())
             logger.println(f'Error: {e}')
 
     # Execute all export functions of wasm
     if args.analyse_directory:
-        wasm_files = list_wasm_in_dir(args.analyse_directory[0])
+        wasm_files = list_wasm_in_dir(args.analyse_directory)
         for contract_path in wasm_files:
             try:
                 func_timeout(args.timeout, execution_and_analyze, args=(contract_path,))
             except FunctionTimedOut:
                 logger.println(f'{contract_path}: time out')
             except Exception as e:
-                logger.debugln(traceback.format_exc())
+                logger.infoln(traceback.format_exc())
                 logger.println(f'Error: {e}')
 
     # Count the number of instruction
@@ -352,6 +377,8 @@ def main():
             float_count, count = count_instruction(vm.module.funcs)
             logger.println(f'float: {float_count}  all: {count}')
 
+    logger.println(f'use time: {end-start}')
+
 
 def execution_and_analyze(contract_path):
     name = os.path.basename(contract_path).split('.wasm')[0]
@@ -363,11 +390,12 @@ def execution_and_analyze(contract_path):
     try:
         global_vars.set_name_int64(name)
     except Exception as e:
-        logger.debugln(f'invalid contract name {name}: {e}')
+        logger.infoln(f'invalid contract name {name}: {e}')
 
     try:
         before_sym_exec(vm, name)
         detect_fake_eos(vm, name)
+        vm.exec_all_func()
         after_sym_exec(name)
     except Exception as e:
         logger.println(f'Error: {e}')
@@ -391,7 +419,10 @@ def after_sym_exec(name):
         logger.println(f'{name}: delegate call found')
     if global_vars.ethereum_greedy > 0:
         logger.println(f'{name}: greedy found')
-
+    if len(global_vars.call_symbolic_ret) > 0:
+        logger.println(f'{name}: mishandled exception found')
+    if global_vars.ethereum_reentrancy_detection > 0:
+        logger.println(f'{name}: reentrancy found')
 
 if __name__ == '__main__':
     main()
