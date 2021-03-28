@@ -16,8 +16,8 @@ To evaluate a smart contract, the wasm smart contract is needed. The wasm byteco
 as following.
 
   + EOSIO smart contract. Using official development kit, developer could compile cpp or rust source code to wasm
-  + Ethereum smart contract. By compiling solidity source code via [soll](https://github.com/second-state/SOLL) or 
-    [solang](https://github.com/hyperledger-labs/solang), developer could get the corresponding wasm file.
+  + Ethereum smart contract. By compiling solidity source code via [solc](https://github.com/ethereum/solidity/releases) (see below for details), 
+  developer could get the corresponding wasm file.
 
 Of course, WANA could execute any wasm file other than smart contract. Therefore, any valid wasm file will be 
 symbolic executed correctly.
@@ -31,6 +31,7 @@ The main components of WANA is as follow.
   + `bin_format.py` and `bin_reader.py` include bytecode binary representation and reading approach respectively.
   + `structure.py` and `runtime.py` represent WebAssembly bytecode structure and virtual machine runtime structure.
   + `number.py`, `utils.py` and `logger.py` are helper modules.
+  + `emulator.py` is the module for library function emulating.
   
 ## Prerequisites
 The following Python packages are required.
@@ -55,13 +56,17 @@ eosio-cpp appdemo.cpp -o appdemo.wasm
 ```
 
 ### Ethereum smart contract
-The type of Ethereum smart contract source code is solidity. At present, there are some tools to complete the process
-that compile smart contract from solidity to WebAssembly. For example, [soll](https://github.com/second-state/SOLL) is
-a more mature tool. After setting up the environment of soll, using the following command to compile a smart contract,
-for example, [Router.sol](./examples/Ethereum_contracts/delegatecall_samples/Router.sol).
+The type of Ethereum smart contract source code is solidity. We have prepared the wasm file and its solidity 
+source code that can be used for execution. If you want to compile solidity yourself, at present, solidity officially can complete the process
+that compile smart contract from solidity to WebAssembly. This tool is [solc](https://github.com/ethereum/solidity/releases). 
+However, it is still in the process of experimentation. Therefore, we recommend using the [0.7.5 version of solc](https://github.com/ethereum/solidity/releases/tag/v0.7.5). After download solc, using the following command to compile a smart contract. (**example.sol** is the smart contract path and **example_directory** is the output target directory)  
+For example, [example.sol](./examples/Ethereum_contracts/delegatecall_samples/Router.sol).
 ```bash
-~/soll/build/tools/soll/soll Router.sol
+./solc-static-linux --ewasm example.sol -o example_directory
 ```
+This command will output two files, example.wasm and example.wast. Since solc is still in the experimental stage, 
+the output example.wasm does not contain the execution logic of the smart contract. 
+We need to separate the wasm code that is actually used for execution from example.wast.
 
 ### Analysis
 The following command will analyze the EOSIO smart contract `contract.wasm` with timeout 20 seconds. The `-t` is 
@@ -70,14 +75,14 @@ optional, the symbolic execution won't be interrupted until complete analysis if
 python3 wana.py -t 20 -e contract.wasm
 ```
 
-Using the follow command, WANA will analyze all smart contracts in the directory `contracts_directory`.
-```bash
-python3 wana.py -a contracts_directory/
-```
-
 To analyze Ethereum smart contract, the option `--sol` is needed.
 ```bash
 python3 wana.py --sol -e ethereum_contract.wasm
+```
+
+If you want to get complete execution information, you can set the option `--lvl`, `1` for basic information, the highest is `3`
+```bash
+python3 wana.py --sol -e --lvl 1 ethereum_contract.wasm
 ```
 
 ## Input and Output
