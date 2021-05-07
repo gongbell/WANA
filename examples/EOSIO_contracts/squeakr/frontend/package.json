@@ -15,7 +15,7 @@
     "scatterjs-plugin-eosjs": "^1.5.0",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0",
-    "underscore": "^1.9.1",
+    "underscore": "^1.12.1",
     "vue": "^2.5.21",
     "vue-router": "^3.0.1"
   },
