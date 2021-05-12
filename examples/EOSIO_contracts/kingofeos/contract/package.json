@@ -23,7 +23,7 @@
     "binaryen": "^37.0.0",
     "dotenv": "^6.0.0",
     "eosjs": "^15.0.3",
-    "lodash": "^4.17.5"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
