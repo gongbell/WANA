@@ -8,7 +8,7 @@
   "dependencies": {
     "gulp": "^3.9.1",
     "semantic-ui": "^2.3.1",
-    "shelljs": "^0.8.1"
+    "shelljs": "^0.8.5"
   },
   "license": "ISC"
 }
