@@ -19,7 +19,7 @@
     "massive": "^5.2.0",
     "moment": "^2.22.2",
     "mongodb": "^3.1.4",
-    "node-fetch": "^2.2.0",
+    "node-fetch": "^3.1.1",
     "pg-monitor": "^1.0.0",
     "pm2": "^3.0.0",
     "postgraphile": "^4.0.0-rc.3",
