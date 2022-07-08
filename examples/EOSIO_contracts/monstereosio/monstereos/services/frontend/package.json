@@ -23,7 +23,7 @@
     "final-form": "^4.9.1",
     "graphql": "^0.13.2",
     "graphql-tag": "^2.9.2",
-    "moment": "^2.22.2",
+    "moment": "^2.29.4",
     "monster-battle-react-component": "https://github.com/MonsterEOS/monster-battle-react-component",
     "node-sass-chokidar": "^1.3.3",
     "notifyjs": "^3.0.0",
