@@ -14,7 +14,7 @@
     "dockerode": "^2.5.5",
     "dotenv": "^6.0.0",
     "eosjs2": "^0.0.12",
-    "express": "^4.16.3",
+    "express": "^4.17.3",
     "graphile-utils": "^4.0.0-rc.5",
     "massive": "^5.2.0",
     "moment": "^2.22.2",
